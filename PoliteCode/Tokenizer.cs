@@ -34,7 +34,8 @@ namespace PoliteCode
             Terminator,     // newline character
             Unknown,        // Unrecognized token
             DefineFunction, // "please define function"
-            Return          // "thank you for returning"
+            Return,         // "thank you for returning"
+            CallFunction    // "please call" (new)
         }
 
         // שמירת מידע על המשתנה הנוכחי בזמן הטוקניזציה
@@ -62,8 +63,7 @@ namespace PoliteCode
         /// </summary>
         public List<string> TokenizeInput(string input)
         {
-            // דפוס לזיהוי כל הטוקנים האפשריים בשפת PoliteCode
-            string pattern = @"(please define function|please create|thank you for printing|thank you for checking if|thank you for looping|thank you for returning|from|to|while|greater or equal to|less or equal to|equal to|different from|greater then|less then|[a-zA-Z_]\w*|-?\d+(\.\d+)?|""[^""]*""|true|false|equals|\(|\)|\{|\})";
+            string pattern = @"(please define function|please create|please call|thank you for printing|thank you for checking if|thank you for looping|thank you for returning|from|to|while|greater or equal to|less or equal to|equal to|different from|greater then|less then|[a-zA-Z_]\w*|-?\d+(\.\d+)?|""[^""]*""|true|false|equals|\(|\)|\{|\})";
             var matches = Regex.Matches(input, pattern);
             return matches.Cast<Match>().Select(m => m.Value).ToList();
         }
@@ -97,6 +97,8 @@ namespace PoliteCode
         public TokenType IdentifyToken(string value)
         {
             // זיהוי סוג הטוקן בהתבסס על מחרוזת הקלט
+            if (value == "please call") 
+                return TokenType.CallFunction;
             if (value == "please define function") return TokenType.DefineFunction;
             if (value == "please create") return TokenType.Create;
             if (value == "thank you for printing") return TokenType.Print;

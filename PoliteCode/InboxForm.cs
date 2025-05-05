@@ -54,7 +54,7 @@ namespace PoliteCode
 
 please define function void main() {
     please create integer result
-    result equals add(5, 3)
+    result equals please call add(5, 3)
     thank you for printing result
 }"
         },
@@ -71,7 +71,8 @@ please define function void main() {
 
 please define function void main() {
     please create integer number equals 42
-    please create boolean result equals isPositive(number)
+    please create boolean result
+    result equals please call isPositive(number)
     thank you for printing result
 }"
         },
@@ -84,7 +85,8 @@ please define function void main() {
 }
 
 please define function void main() {
-    please create text message equals greet(""World"")
+    please create text message
+    message equals please call greet(""World"")
     thank you for printing message
 }"
         },
@@ -93,8 +95,10 @@ please define function void main() {
         {
             Title = "לולאת for פשוטה",
             Code = @"please define function void main() {
+    please create integer x equals 0
     thank you for looping from 1 to 5 {
-        thank you for printing ""Loop iteration: "" add i
+        thank you for printing x
+
     }
 }"
         },
@@ -127,8 +131,9 @@ please define function void main() {
     please create integer num2 equals 20
     please create integer num3 equals 30
     
-    please create decimal average equals calculateAverage(num1, num2, num3)
-    thank you for printing ""The average is: "" add average
+    please create decimal average
+    average equals please call calculateAverage(num1, num2, num3)
+    thank you for printing average
 }"
         },
 
@@ -147,13 +152,15 @@ please define function void main() {
 
 please define function void main() {
     please create integer number equals 7
+    please create boolean result
     
-    thank you for checking if isEven(number) {
-        thank you for printing number add "" is even""
+    result equals please call isEven(number)
+    thank you for checking if result {
+        thank you for printing number
     }
     
-    thank you for checking if isEven(number) different from true {
-        thank you for printing number add "" is odd""
+    thank you for checking if result different from true {
+        thank you for printing number
     }
 }"
         },
@@ -166,13 +173,16 @@ please define function void main() {
         thank you for returning 1
     }
     
-    thank you for returning n mul factorial(n sub 1)
+    please create integer recResult
+    recResult equals please call factorial(n sub 1)
+    thank you for returning n mul recResult
 }
 
 please define function void main() {
     please create integer number equals 5
-    please create integer result equals factorial(number)
-    thank you for printing number add ""! = "" add result
+    please create integer result
+    result equals please call factorial(number)
+    thank you for printing result
 }"
         },
 
@@ -185,8 +195,9 @@ please define function void main() {
 
 please define function void main() {
     please create decimal tempC equals 25
-    please create decimal tempF equals celsiusToFahrenheit(tempC)
-    thank you for printing tempC add ""°C = "" add tempF add ""°F""
+    please create decimal tempF
+    tempF equals please call celsiusToFahrenheit(tempC)
+    thank you for printing tempF
 }"
         },
 
@@ -201,7 +212,7 @@ please define function void main() {
     please create integer i equals 2
     
     thank you for looping while i mul i less or equal to num {
-        thank you for checking if num div i mul i equals num {
+        thank you for checking if num div i mul i equal to num {
             thank you for returning false
         }
         i equals i add 1
@@ -211,15 +222,15 @@ please define function void main() {
 }
 
 please define function void main() {
-    please create integer number equals 17
+    please create integer number1 equals 17
+    please create boolean isPrimeResult
     
-    thank you for checking if isPrime(number) {
-        thank you for printing number add "" is a prime number""
+    isPrimeResult equals please call isPrime(number1)
+    thank you for checking if isPrimeResult {
+        thank you for printing number1
     }
     
-    thank you for checking if isPrime(number) different from true {
-        thank you for printing number add "" is not a prime number""
-    }
+
 }"
         }
     };

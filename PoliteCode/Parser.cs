@@ -87,7 +87,9 @@ namespace PoliteCode
                 { TokenType.IfCondition, ProcessIfStatement },
                 { TokenType.VariableName, ProcessAssignment },
                 { TokenType.DefineFunction, ProcessFunctionDefinition },
-                { TokenType.Return, ProcessReturnStatement }
+                { TokenType.Return, ProcessReturnStatement },
+                { TokenType.CallFunction, ProcessCallFunc }
+
             };
         }
 
@@ -391,7 +393,7 @@ namespace PoliteCode
         }
 
         /// <summary>
-        /// עיבוד הוראת הקצאת משתנה
+        /// עיבוד הוראת הקצאת משתנה (כולל קריאה לפונקציה)
         /// </summary>
         /// <param name="tokens">רשימת סוגי טוקנים</param>
         /// <param name="inputTokens">רשימת מחרוזות טוקן</param>
@@ -427,6 +429,119 @@ namespace PoliteCode
 
             TryGetVariableType(variableName, out string currentType);
 
+            // בדיקה אם זו הקצאה עם קריאה לפונקציה (equals please call...)
+            if (inputTokens.Count > 3 && inputTokens[2] == "please call")
+            {
+                // וידוא שיש מספיק טוקנים
+                if (inputTokens.Count < 5)
+                {
+                    _tools.ShowError("Invalid function call format after 'equals please call'");
+                    return string.Empty;
+                }
+
+                string functionName = inputTokens[3];
+
+                // בדיקה אם הפונקציה קיימת
+                if (!_functionMap.ContainsKey(functionName))
+                {
+                    _tools.ShowError($"Function '{functionName}' does not exist or was not declared.");
+                    return string.Empty;
+                }
+
+                // וידוא התאמת טיפוסים בין הפונקציה למשתנה
+                if (_functionMap.TryGetValue(functionName, out string returnType))
+                {
+                    if (returnType != currentType && returnType != "void")
+                    {
+                        // התראה על אי-התאמת טיפוסים
+                        _tools.ShowError($"Type mismatch: Function '{functionName}' returns '{returnType}' but variable '{variableName}' is of type '{currentType}'");
+                        return string.Empty;
+                    }
+
+                    if (returnType == "void")
+                    {
+                        _tools.ShowError($"Cannot assign result of void function '{functionName}' to variable '{variableName}'");
+                        return string.Empty;
+                    }
+                }
+
+                // וידוא שיש סוגר פתיחה
+                int openParenIndex = inputTokens.IndexOf("(");
+                if (openParenIndex == -1 || openParenIndex <= 3)
+                {
+                    _tools.ShowError($"Missing opening parenthesis after function name '{functionName}'");
+                    return string.Empty;
+                }
+
+                // חיפוש הסוגר הסוגר
+                int closeParenIndex = -1;
+                int openParenCount = 0;
+
+                for (int i = openParenIndex; i < inputTokens.Count; i++)
+                {
+                    if (inputTokens[i] == "(")
+                    {
+                        openParenCount++;
+                    }
+                    else if (inputTokens[i] == ")")
+                    {
+                        openParenCount--;
+                        if (openParenCount == 0)
+                        {
+                            closeParenIndex = i;
+                            break;
+                        }
+                    }
+                }
+
+                if (closeParenIndex == -1)
+                {
+                    _tools.ShowError("Missing closing parenthesis in function call");
+                    return string.Empty;
+                }
+
+                // עיבוד הפרמטרים
+                List<string> parameters = new List<string>();
+
+                if (closeParenIndex > openParenIndex + 1)
+                {
+                    // קבלת טקסט הפרמטרים
+                    string paramText = string.Join(" ", inputTokens.Skip(openParenIndex + 1).Take(closeParenIndex - openParenIndex - 1));
+
+                    // פיצול פרמטרים לפי פסיקים
+                    string[] paramArr = paramText.Split(',');
+
+                    foreach (var param in paramArr)
+                    {
+                        string trimmedParam = param.Trim();
+
+                        // בדיקה אם הפרמטר הוא ביטוי מורכב
+                        if (trimmedParam.Contains(" "))
+                        {
+                            trimmedParam = _codeGenerator.ConvertExpressionToCSharp(trimmedParam);
+                        }
+                        // בדיקה אם הפרמטר הוא משתנה
+                        else if (Regex.IsMatch(trimmedParam, @"^[a-zA-Z_]\w*$") && !trimmedParam.StartsWith("\""))
+                        {
+                            if (!VariableExists(trimmedParam))
+                            {
+                                _tools.ShowError($"Parameter '{trimmedParam}' is not a declared variable.");
+                                return string.Empty;
+                            }
+                        }
+
+                        if (!string.IsNullOrEmpty(trimmedParam))
+                        {
+                            parameters.Add(trimmedParam);
+                        }
+                    }
+                }
+
+                // יצירת קוד C# לקריאה לפונקציה
+                return $"{variableName} = {functionName}({string.Join(", ", parameters)});";
+            }
+
+            // אחרת, מדובר בהקצאה רגילה
             // עדכון מילוני הטיפוסים של הבודקים
             var allVariableTypes = GetAllVariableTypes();
             _expressionValidator.SetVariableTypes(allVariableTypes);
@@ -803,6 +918,126 @@ namespace PoliteCode
             return $"return {csharpExpression};";
         }
 
+        private string ProcessCallFunc(List<TokenType> tokens, List<string> inputTokens)
+        {
+            // Finding the "please call" token (which is at index 0 in your case)
+            int callIndex = 0;
+
+            // בדיקה אם מדובר בהקצאה או בקריאה עצמאית
+            bool isAssignment = false;
+            string variableName = string.Empty;
+
+            // מציאת שם הפונקציה (אחרי "please call")
+            string functionName = inputTokens[callIndex + 1];
+
+            // בדיקה אם הפונקציה קיימת
+            if (!_functionMap.ContainsKey(functionName))
+            {
+                _tools.ShowError($"Function '{functionName}' does not exist or was not declared.");
+                return string.Empty;
+            }
+
+            // בדיקת התאמת טיפוס החזרה לסוג המשתנה (אם יש הקצאה)
+            if (isAssignment)
+            {
+                // קבלת סוג ההחזרה של הפונקציה
+                if (_functionMap.TryGetValue(functionName, out string returnType))
+                {
+                    // אם זו פונקציית void, אי אפשר להקצות את התוצאה שלה למשתנה
+                    if (returnType == "void")
+                    {
+                        _tools.ShowError($"Cannot assign result of void function '{functionName}' to variable '{variableName}'");
+                        return string.Empty;
+                    }
+
+                    // בדיקת התאמת טיפוסים בין הפונקציה למשתנה
+                    if (TryGetVariableType(variableName, out string variableType))
+                    {
+                        if (returnType != variableType)
+                        {
+                            _tools.ShowError($"Type mismatch: Function '{functionName}' returns '{returnType}' but variable '{variableName}' is of type '{variableType}'");
+                            return string.Empty;
+                        }
+                    }
+                }
+            }
+
+            // וידוא שיש סוגר פתיחה
+            if (callIndex + 2 >= inputTokens.Count || inputTokens[callIndex + 2] != "(")
+            {
+                _tools.ShowError($"Missing opening parenthesis after function name '{functionName}'");
+                return string.Empty;
+            }
+
+            // חיפוש הסוגר הסוגר
+            int openParenIndex = callIndex + 2; // מיקום ה-"("
+            int closeParenIndex = -1;
+
+            // מחפש את הסוגר הסוגר המתאים
+            for (int i = openParenIndex + 1; i < inputTokens.Count; i++)
+            {
+                if (inputTokens[i] == ")")
+                {
+                    closeParenIndex = i;
+                    break;
+                }
+            }
+
+            if (closeParenIndex == -1)
+            {
+                _tools.ShowError("Missing closing parenthesis in function call");
+                return string.Empty;
+            }
+
+            // בניית רשימת הפרמטרים
+            List<string> parameters = new List<string>();
+
+            // בדיקה אם יש פרמטרים בין הסוגריים (אם יש תוכן בין ה-"(" וה-")")
+            if (closeParenIndex > openParenIndex + 1)
+            {
+                // לוקח את כל הטוקנים בין הסוגריים
+                string paramText = string.Join(" ", inputTokens.Skip(openParenIndex + 1).Take(closeParenIndex - openParenIndex - 1));
+
+                // פיצול לפי פסיקים (אם יש יותר מפרמטר אחד)
+                string[] paramList = paramText.Split(',');
+
+                foreach (var param in paramList)
+                {
+                    string trimmedParam = param.Trim();
+
+                    // בדיקה אם הפרמטר הוא ביטוי מורכב
+                    if (trimmedParam.Contains(" "))
+                    {
+                        // המרת ביטוי PoliteCode לביטוי C#
+                        trimmedParam = _codeGenerator.ConvertExpressionToCSharp(trimmedParam);
+                    }
+                    // בדיקה אם הפרמטר הוא משתנה
+                    else if (Regex.IsMatch(trimmedParam, @"^[a-zA-Z_]\w*$") && !trimmedParam.StartsWith("\""))
+                    {
+                        if (!VariableExists(trimmedParam))
+                        {
+                            _tools.ShowError($"Parameter '{trimmedParam}' is not a declared variable.");
+                            return string.Empty;
+                        }
+                    }
+
+                    parameters.Add(trimmedParam);
+                }
+            }
+
+            // יצירת קוד C# מתאים
+            if (isAssignment)
+            {
+                return $"{variableName} = {functionName}({string.Join(", ", parameters)});";
+            }
+            else
+            {
+                return $"{functionName}({string.Join(", ", parameters)});";
+            }
+        }
+
+
+
         /// <summary>
         /// עיבוד הגדרת פונקציה
         /// </summary>
@@ -993,6 +1228,39 @@ namespace PoliteCode
             }
 
             return allTypes;
+        }
+
+        /// <summary>
+        /// פיצול רשימת פרמטרים המופרדים בפסיקים, תוך התחשבות במחרוזות
+        /// </summary>
+        private List<string> SplitParameterList(string paramString)
+        {
+            List<string> result = new List<string>();
+            bool insideString = false;
+            int startIndex = 0;
+
+            for (int i = 0; i < paramString.Length; i++)
+            {
+                char c = paramString[i];
+
+                if (c == '"')
+                {
+                    insideString = !insideString;
+                }
+                else if (c == ',' && !insideString)
+                {
+                    result.Add(paramString.Substring(startIndex, i - startIndex));
+                    startIndex = i + 1;
+                }
+            }
+
+            // הוספת הפרמטר האחרון
+            if (startIndex < paramString.Length)
+            {
+                result.Add(paramString.Substring(startIndex));
+            }
+
+            return result;
         }
 
         /// <summary>
