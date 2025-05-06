@@ -63,7 +63,11 @@ namespace PoliteCode
         /// </summary>
         public List<string> TokenizeInput(string input)
         {
-            string pattern = @"(please define function|please create|please call|thank you for printing|thank you for checking if|thank you for looping|thank you for returning|from|to|while|greater or equal to|less or equal to|equal to|different from|greater then|less then|[a-zA-Z_]\w*|-?\d+(\.\d+)?|""[^""]*""|true|false|equals|\(|\)|\{|\})";
+            string pattern = @"(please define function|please create|please call|thank you for printing|thank you for checking if|
+                            thank you for looping|thank you for returning|from|to|while|
+                            greater or equal to|less or equal to|equal to|different from
+                            |greater then|less then|[a-zA-Z_]\w*|-?\d+(\.\d+)?|""[^""]*""|
+                            true|false|equals|\(|\)|\{|\})";
             var matches = Regex.Matches(input, pattern);
             return matches.Cast<Match>().Select(m => m.Value).ToList();
         }

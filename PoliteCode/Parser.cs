@@ -1263,13 +1263,38 @@ namespace PoliteCode
             return result;
         }
 
-        /// <summary>
-        /// קבלת קוד C# שנוצר
-        /// </summary>
-        /// <returns>קוד C# כמחרוזת</returns>
+        // עדכן את מתודת GetCSharpCode() שנמצאת בסוף הקובץ Parser.cs
         public string GetCSharpCode()
         {
-            return _csharpCode.ToString();
+            // הוסף את המעטפת הדרושה לקוד
+            StringBuilder fullCode = new StringBuilder();
+
+            // הוסף using statements
+            fullCode.AppendLine("using System;");
+            fullCode.AppendLine("using System.Collections.Generic;");
+            fullCode.AppendLine("using System.Linq;");
+            fullCode.AppendLine("using System.Text;");
+            fullCode.AppendLine();
+
+            // הוסף namespace
+            fullCode.AppendLine("namespace PoliteCodeGenerated");
+            fullCode.AppendLine("{");
+            fullCode.AppendLine("    public class Program");
+            fullCode.AppendLine("    {");
+
+            // הוסף את הקוד המתורגם עם הזחה נוספת
+            string[] lines = _csharpCode.ToString().Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (string line in lines)
+            {
+                // הוסף הזחה של 8 רווחים (כי הקוד כבר בהזחה של 4 רווחים פנימה בתוך הפונקציות)
+                fullCode.AppendLine("        " + line);
+            }
+
+            // סגור את מחלקת Program והנפיימספייס
+            fullCode.AppendLine("    }");
+            fullCode.AppendLine("}");
+
+            return fullCode.ToString();
         }
 
         #endregion

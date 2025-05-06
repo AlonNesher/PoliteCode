@@ -36,7 +36,8 @@ namespace PoliteCode
             this.writeCode = new System.Windows.Forms.Button();
             this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.CodeC = new System.Windows.Forms.TextBox();
-            this.btnInbox = new System.Windows.Forms.Button(); // כפתור Inbox חדש
+            this.btnInbox = new System.Windows.Forms.Button(); // כפתור Inbox
+            this.runCodeBtn = new System.Windows.Forms.Button(); // כפתור Run Code חדש
             this.SuspendLayout();
             // 
             // input
@@ -76,7 +77,7 @@ namespace PoliteCode
             this.CodeC.Size = new System.Drawing.Size(500, 680);
             this.CodeC.TabIndex = 4;
             // 
-            // btnInbox - כפתור חדש!
+            // btnInbox - כפתור אינבוקס!
             // 
             this.btnInbox.Font = new System.Drawing.Font("Consolas", 12F, System.Drawing.FontStyle.Bold);
             this.btnInbox.Location = new System.Drawing.Point(12, 12);
@@ -87,10 +88,22 @@ namespace PoliteCode
             this.btnInbox.UseVisualStyleBackColor = true;
             this.btnInbox.Click += new System.EventHandler(this.btnInbox_Click);
             // 
+            // runCodeBtn - כפתור Run Code חדש!
+            // 
+            this.runCodeBtn.Font = new System.Drawing.Font("Consolas", 14F);
+            this.runCodeBtn.Location = new System.Drawing.Point(700, 740);
+            this.runCodeBtn.Name = "runCodeBtn";
+            this.runCodeBtn.Size = new System.Drawing.Size(200, 50);
+            this.runCodeBtn.TabIndex = 6;
+            this.runCodeBtn.Text = "run code";
+            this.runCodeBtn.UseVisualStyleBackColor = true;
+            this.runCodeBtn.Click += new System.EventHandler(this.runCodeBtn_Click);
+            // 
             // Form1
             // 
             this.ClientSize = new System.Drawing.Size(1200, 800);
-            this.Controls.Add(this.btnInbox); // הוסף את הכפתור לטופס
+            this.Controls.Add(this.runCodeBtn); // הוסף את הכפתור החדש לטופס
+            this.Controls.Add(this.btnInbox);
             this.Controls.Add(this.CodeC);
             this.Controls.Add(this.writeCode);
             this.Controls.Add(this.input);
@@ -106,6 +119,7 @@ namespace PoliteCode
         private System.Windows.Forms.Button writeCode;
         private System.Windows.Forms.ContextMenuStrip contextMenuStrip1;
         private System.Windows.Forms.TextBox CodeC;
-        private System.Windows.Forms.Button btnInbox; // חשוב! הצהרה על הכפתור
+        private System.Windows.Forms.Button btnInbox;
+        private System.Windows.Forms.Button runCodeBtn; // הצהרה על הכפתור החדש
     }
 }

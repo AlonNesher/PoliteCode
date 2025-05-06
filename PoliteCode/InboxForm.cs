@@ -222,12 +222,12 @@ please define function void main() {
 }
 
 please define function void main() {
-    please create integer number1 equals 17
+    please create integer number equals 17
     please create boolean isPrimeResult
     
-    isPrimeResult equals please call isPrime(number1)
+    isPrimeResult equals please call isPrime(number)
     thank you for checking if isPrimeResult {
-        thank you for printing number1
+        thank you for printing number
     }
     
 
