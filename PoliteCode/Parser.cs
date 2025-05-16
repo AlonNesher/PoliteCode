@@ -140,7 +140,7 @@ namespace PoliteCode
             ProcessNextLine();
 
             // אחרי עיבוד כל השורות, בדוק אם יש פונקציית void main
-            if (!_functionMap.TryGetValue("main", out string returnType) || returnType != "void")
+            if (!_functionMap.TryGetValue("Main", out string returnType) || returnType != "void")
             {
                 _tools.ShowError("Missing required entry point: 'please define function void main() {'. A void main function must be defined.");
                 return false;
@@ -1271,27 +1271,20 @@ namespace PoliteCode
 
             // הוסף using statements
             fullCode.AppendLine("using System;");
-            fullCode.AppendLine("using System.Collections.Generic;");
-            fullCode.AppendLine("using System.Linq;");
-            fullCode.AppendLine("using System.Text;");
             fullCode.AppendLine();
 
-            // הוסף namespace
-            fullCode.AppendLine("namespace PoliteCodeGenerated");
+            fullCode.AppendLine("public class Program");
             fullCode.AppendLine("{");
-            fullCode.AppendLine("    public class Program");
-            fullCode.AppendLine("    {");
 
             // הוסף את הקוד המתורגם עם הזחה נוספת
             string[] lines = _csharpCode.ToString().Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
             foreach (string line in lines)
             {
                 // הוסף הזחה של 8 רווחים (כי הקוד כבר בהזחה של 4 רווחים פנימה בתוך הפונקציות)
-                fullCode.AppendLine("        " + line);
+                fullCode.AppendLine("  " + line);
             }
 
             // סגור את מחלקת Program והנפיימספייס
-            fullCode.AppendLine("    }");
             fullCode.AppendLine("}");
 
             return fullCode.ToString();

@@ -52,7 +52,7 @@ namespace PoliteCode
     thank you for returning a add b
 }
 
-please define function void main() {
+please define function void Main() {
     please create integer result
     result equals please call add(5, 3)
     thank you for printing result
@@ -69,7 +69,7 @@ please define function void main() {
     thank you for returning false
 }
 
-please define function void main() {
+please define function void Main() {
     please create integer number equals 42
     please create boolean result
     result equals please call isPositive(number)
@@ -84,7 +84,7 @@ please define function void main() {
     thank you for returning ""Hello, "" add name
 }
 
-please define function void main() {
+please define function void Main() {
     please create text message
     message equals please call greet(""World"")
     thank you for printing message
@@ -94,7 +94,7 @@ please define function void main() {
         new CodeTemplate
         {
             Title = "לולאת for פשוטה",
-            Code = @"please define function void main() {
+            Code = @"please define function void Main() {
     please create integer x equals 0
     thank you for looping from 1 to 5 {
         thank you for printing x
@@ -106,7 +106,7 @@ please define function void main() {
         new CodeTemplate
         {
             Title = "לולאת while להצגת ספירה לאחור",
-            Code = @"please define function void main() {
+            Code = @"please define function void Main() {
     please create integer countdown equals 10
     
     thank you for looping while countdown greater then 0 {
@@ -126,7 +126,7 @@ please define function void main() {
     thank you for returning sum div 3
 }
 
-please define function void main() {
+please define function void Main() {
     please create integer num1 equals 10
     please create integer num2 equals 20
     please create integer num3 equals 30
@@ -150,7 +150,7 @@ please define function void main() {
     thank you for returning false
 }
 
-please define function void main() {
+please define function void Main() {
     please create integer number equals 7
     please create boolean result
     
@@ -178,7 +178,7 @@ please define function void main() {
     thank you for returning n mul recResult
 }
 
-please define function void main() {
+please define function void Main() {
     please create integer number equals 5
     please create integer result
     result equals please call factorial(number)
@@ -193,7 +193,7 @@ please define function void main() {
     thank you for returning celsius mul 9 div 5 add 32
 }
 
-please define function void main() {
+please define function void Main() {
     please create decimal tempC equals 25
     please create decimal tempF
     tempF equals please call celsiusToFahrenheit(tempC)
@@ -221,7 +221,7 @@ please define function void main() {
     thank you for returning true
 }
 
-please define function void main() {
+please define function void Main() {
     please create integer number equals 17
     please create boolean isPrimeResult
     
