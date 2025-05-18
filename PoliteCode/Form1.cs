@@ -37,6 +37,7 @@ namespace PoliteCode
             // יצירת מופעים של הרכיבים
             _tokenizer = new Tokenizer();
             _tools = new PoliteCodeTools();
+            _tools.SetParentForm(this); // העברת הפניה לטופס הנוכחי
             _codeGenerator = new CodeGenerator(_tokenizer);
             _parser = new Parser(_tokenizer, _codeGenerator, _tools);
         }
@@ -134,6 +135,40 @@ namespace PoliteCode
             catch (Exception ex)
             {
                 MessageBox.Show($"שגיאה: {ex.Message}", "שגיאה", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+
+        /// <summary>
+        /// סימון שורה עם שגיאה בתיבת הטקסט
+        /// </summary>
+        /// <param name="lineNumber">מספר השורה לסימון</param>
+        public void HighlightErrorLine(int lineNumber)
+        {
+            if (lineNumber < 0 || input == null || lineNumber >= input.Lines.Length)
+                return;
+
+            try
+            {
+                // מציאת מיקום השורה בתיבת הטקסט
+                int lineStartPos = input.GetFirstCharIndexFromLine(lineNumber);
+                int lineEndPos;
+
+                if (lineNumber < input.Lines.Length - 1)
+                    lineEndPos = input.GetFirstCharIndexFromLine(lineNumber + 1) - 1;
+                else
+                    lineEndPos = input.Text.Length;
+
+                // סימון השורה
+                input.Select(lineStartPos, lineEndPos - lineStartPos);
+                input.Focus();
+
+                // אפשרות: שינוי צבע הרקע של השורה
+                // צריך לדאוג לשחזר את הצבע המקורי בהמשך
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error highlighting line: {ex.Message}");
             }
         }
     }

@@ -3,14 +3,35 @@ using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
+using System.Linq;
 
 namespace PoliteCode
 {
     /// <summary>
-    /// כלי עזר ושירותים עבור PoliteCode
+    /// כלי עזר ושירותים עבור PoliteCode, כולל טיפול בשגיאות מפורטות יותר
     /// </summary>
     public class PoliteCodeTools
     {
+        // שמירת טקסט הקוד המקורי לצורך הצגת הודעות שגיאה מדויקות יותר
+        private List<string> _sourceLines = new List<string>();
+        private Form1 _parentForm; // הפניה לטופס הראשי
+
+        /// <summary>
+        /// הגדרת הטופס הראשי לצורך סימון שורות שגיאה
+        /// </summary>
+        public void SetParentForm(Form1 form)
+        {
+            _parentForm = form;
+        }
+
+        /// <summary>
+        /// שמירת קוד המקור לצורך הודעות שגיאה מדויקות יותר
+        /// </summary>
+        public void SetSourceCode(string[] lines)
+        {
+            _sourceLines = new List<string>(lines);
+        }
+
         /// <summary>
         /// בדיקת תקינות הביטוי מבחינת תחביר וסמנטיקה
         /// </summary>
@@ -63,12 +84,52 @@ namespace PoliteCode
         }
 
         /// <summary>
-        /// הצגת הודעת שגיאה למשתמש
+        /// הצגת הודעת שגיאה מפורטת למשתמש
         /// </summary>
-        /// <param name="message">הודעת שגיאה</param>
-        public void ShowError(string message)
+        /// <param name="message">הודעת השגיאה</param>
+        /// <param name="lineNumber">מספר השורה בה התרחשה השגיאה, -1 אם לא ידוע</param>
+        /// <param name="columnNumber">מספר העמודה בה התרחשה השגיאה, -1 אם לא ידוע</param>
+        public void ShowError(string message, int lineNumber = -1, int columnNumber = -1)
         {
-            MessageBox.Show(message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            string errorMessage = message;
+
+            // אם מספר שורה תקף נמסר, הוסף אותו ואת תוכן השורה להודעה
+            if (lineNumber >= 0 && lineNumber < _sourceLines.Count)
+            {
+                string lineText = _sourceLines[lineNumber].Trim();
+                string linePointer = string.Empty;
+
+                // הוספת סימון לעמודה הספציפית אם ידועה
+                if (columnNumber >= 0 && columnNumber < lineText.Length)
+                {
+                    linePointer = new string(' ', columnNumber) + "^";
+                }
+
+                errorMessage = $"Error at line {lineNumber + 1}:\n\"{lineText}\"\n{linePointer}\n\n{message}";
+
+                // סימון השורה בתיבת הטקסט
+                if (_parentForm != null)
+                {
+                    try
+                    {
+                        _parentForm.BeginInvoke(new Action(() => {
+                            _parentForm.HighlightErrorLine(lineNumber);
+                        }));
+                    }
+                    catch (Exception ex)
+                    {
+                        // במקרה של שגיאה בסימון, פשוט המשך ללא סימון
+                        Console.WriteLine($"Warning: Could not highlight error line: {ex.Message}");
+                    }
+                }
+            }
+            else if (lineNumber >= 0)
+            {
+                // מקרה שיש מספר שורה אך לא ניתן לקבל את תוכן השורה
+                errorMessage = $"Error at line {lineNumber + 1}:\n{message}";
+            }
+
+            MessageBox.Show(errorMessage, "Compilation Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
 
         /// <summary>
@@ -78,6 +139,73 @@ namespace PoliteCode
         public void ShowInfo(string message)
         {
             Console.WriteLine(message); // לניפוי שגיאות ודיווח התקדמות
+        }
+
+        /// <summary>
+        /// חיפוש מיקום הטוקן בטקסט המקורי
+        /// </summary>
+        /// <param name="token">הטוקן לחיפוש</param>
+        /// <param name="startLineIndex">שורת ההתחלה לחיפוש</param>
+        /// <param name="foundLineIndex">שורה בה נמצא הטוקן (מוחזר)</param>
+        /// <param name="columnIndex">עמודה בה נמצא הטוקן (מוחזר)</param>
+        /// <returns>True אם הטוקן נמצא</returns>
+        public bool FindTokenLocation(string token, int startLineIndex, out int foundLineIndex, out int columnIndex)
+        {
+            foundLineIndex = -1;
+            columnIndex = -1;
+
+            if (_sourceLines == null || _sourceLines.Count == 0 || string.IsNullOrEmpty(token))
+                return false;
+
+            // הגבלת טווח החיפוש
+            int endLineIndex = Math.Min(startLineIndex + 5, _sourceLines.Count - 1);
+
+            for (int i = startLineIndex; i <= endLineIndex; i++)
+            {
+                string line = _sourceLines[i];
+                int index = line.IndexOf(token);
+                if (index >= 0)
+                {
+                    foundLineIndex = i;
+                    columnIndex = index;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// קבלת מספר השורה הנוכחית מהשוואה עם טקסט המקור
+        /// </summary>
+        /// <param name="context">טקסט הקשר</param>
+        /// <returns>מספר השורה, או -1 אם לא נמצא</returns>
+        public int GetLineNumberFromContext(string context)
+        {
+            if (_sourceLines == null || _sourceLines.Count == 0 || string.IsNullOrEmpty(context))
+                return -1;
+
+            context = context.Trim();
+
+            // ניסיון למצוא התאמה מדויקת של השורה
+            for (int i = 0; i < _sourceLines.Count; i++)
+            {
+                if (_sourceLines[i].Trim() == context)
+                    return i;
+            }
+
+            // אם לא נמצא, ננסה לחפש חלקים מהשורה
+            if (context.Length > 10)
+            {
+                string partialContext = context.Substring(0, 10);
+                for (int i = 0; i < _sourceLines.Count; i++)
+                {
+                    if (_sourceLines[i].Contains(partialContext))
+                        return i;
+                }
+            }
+
+            return -1;
         }
 
         /// <summary>

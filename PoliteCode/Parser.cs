@@ -122,11 +122,15 @@ namespace PoliteCode
         /// <returns>True אם הקלט תקין, False אחרת</returns>
         public bool SetInput(string[] inputLines)
         {
+            _lines.Clear();
             foreach (string line in inputLines)
             {
                 if (!string.IsNullOrWhiteSpace(line))
                     _lines.Add(line.Trim());
             }
+
+            // העברת קוד המקור ל-PoliteCodeTools לשימוש בהודעות שגיאה
+            _tools.SetSourceCode(_lines.ToArray());
 
             return _lines.Count > 0;
         }
@@ -239,6 +243,7 @@ namespace PoliteCode
             ProcessNextLine(); // קריאה רקורסיבית לעיבוד השורה הבאה
         }
 
+     
         /// <summary>
         /// אימות שכל הסוגריים מאוזנים
         /// </summary>
@@ -248,7 +253,7 @@ namespace PoliteCode
             if (_blockStartIndices.Count > 0)
             {
                 int firstUnclosedBlock = _blockStartIndices.Pop();
-                _tools.ShowError($"Missing closing curly brace '}}'. Block starting at line {firstUnclosedBlock} is not properly closed.");
+                _tools.ShowError($"Missing closing curly brace '}}'. Block starting at line {firstUnclosedBlock + 1} is not properly closed.", firstUnclosedBlock);
                 return;
             }
 
@@ -279,7 +284,7 @@ namespace PoliteCode
             }
             else
             {
-                _tools.ShowError("Unknown command: " + inputTokens[0]);
+                _tools.ShowError("Unknown command: " + inputTokens[0], _currentLineIndex);
                 return;
             }
 
@@ -309,19 +314,19 @@ namespace PoliteCode
         {
             if (tokens.Count < 3)
             {
-                _tools.ShowError("Incomplete variable declaration");
+                _tools.ShowError("Incomplete variable declaration", _currentLineIndex);
                 return string.Empty;
             }
 
             if (tokens[1] != TokenType.VariableType)
             {
-                _tools.ShowError("Missing variable type in declaration");
+                _tools.ShowError("Missing variable type in declaration", _currentLineIndex);
                 return string.Empty;
             }
 
             if (tokens[2] != TokenType.VariableName)
             {
-                _tools.ShowError("Missing variable name in declaration");
+                _tools.ShowError("Missing variable name in declaration", _currentLineIndex);
                 return string.Empty;
             }
 
@@ -329,13 +334,13 @@ namespace PoliteCode
 
             if (VariableExists(variableName))
             {
-                _tools.ShowError($"Variable '{variableName}' cannot be created because it conflicts with an existing variable.");
+                _tools.ShowError($"Variable '{variableName}' cannot be created because it conflicts with an existing variable.", _currentLineIndex);
                 return string.Empty;
             }
 
             if (_functionMap.ContainsKey(variableName))
             {
-                _tools.ShowError($"Variable '{variableName}' cannot be created because it conflicts with an existing function.");
+                _tools.ShowError($"Variable '{variableName}' cannot be created because it conflicts with an existing function.", _currentLineIndex);
                 return string.Empty;
             }
 
@@ -347,7 +352,7 @@ namespace PoliteCode
             {
                 if (tokens.Count < 5)
                 {
-                    _tools.ShowError("Missing value after 'equals' in variable declaration");
+                    _tools.ShowError("Missing value after 'equals' in variable declaration", _currentLineIndex);
                     return string.Empty;
                 }
 
@@ -362,7 +367,7 @@ namespace PoliteCode
                 // שלב 1: בדיקת תקינות הביטוי לפי הסוג
                 if (!_expressionValidator.IsValid(expression, variableTypePolite, out string errorMsg))
                 {
-                    _tools.ShowError($"Invalid initialization expression: {errorMsg}");
+                    _tools.ShowError($"Invalid initialization expression: {errorMsg}", _currentLineIndex);
                     return string.Empty;
                 }
 
@@ -377,7 +382,7 @@ namespace PoliteCode
 
                     if (!isNumber && !isOperator && !isString && !isBooleanLiteral && !VariableExists(token))
                     {
-                        _tools.ShowError($"Variable '{token}' used in expression but was not declared.");
+                        _tools.ShowError($"Variable '{token}' used in expression but was not declared.", _currentLineIndex);
                         return string.Empty;
                     }
                 }
@@ -402,7 +407,7 @@ namespace PoliteCode
         {
             if (tokens.Count < 3)
             {
-                _tools.ShowError("Invalid assignment. Expected format: [variable] equals [expression]");
+                _tools.ShowError("Invalid assignment. Expected format: [variable] equals [expression]", _currentLineIndex);
                 return string.Empty;
             }
 
@@ -410,20 +415,20 @@ namespace PoliteCode
 
             if (_functionMap.ContainsKey(variableName))
             {
-                _tools.ShowError($"Cannot assign value to '{variableName}' because it is a function name.");
+                _tools.ShowError($"Cannot assign value to '{variableName}' because it is a function name.", _currentLineIndex);
                 return string.Empty;
             }
 
             // בדיקה אם המשתנה קיים
             if (!VariableExists(variableName))
             {
-                _tools.ShowError($"Variable '{variableName}' does not exist");
+                _tools.ShowError($"Variable '{variableName}' does not exist", _currentLineIndex);
                 return string.Empty;
             }
 
             if (tokens[1] != TokenType.Equals)
             {
-                _tools.ShowError("Missing 'equals' keyword after variable name");
+                _tools.ShowError("Missing 'equals' keyword after variable name", _currentLineIndex);
                 return string.Empty;
             }
 
@@ -435,7 +440,7 @@ namespace PoliteCode
                 // וידוא שיש מספיק טוקנים
                 if (inputTokens.Count < 5)
                 {
-                    _tools.ShowError("Invalid function call format after 'equals please call'");
+                    _tools.ShowError("Invalid function call format after 'equals please call'", _currentLineIndex);
                     return string.Empty;
                 }
 
@@ -444,7 +449,7 @@ namespace PoliteCode
                 // בדיקה אם הפונקציה קיימת
                 if (!_functionMap.ContainsKey(functionName))
                 {
-                    _tools.ShowError($"Function '{functionName}' does not exist or was not declared.");
+                    _tools.ShowError($"Function '{functionName}' does not exist or was not declared.", _currentLineIndex);
                     return string.Empty;
                 }
 
@@ -454,13 +459,13 @@ namespace PoliteCode
                     if (returnType != currentType && returnType != "void")
                     {
                         // התראה על אי-התאמת טיפוסים
-                        _tools.ShowError($"Type mismatch: Function '{functionName}' returns '{returnType}' but variable '{variableName}' is of type '{currentType}'");
+                        _tools.ShowError($"Type mismatch: Function '{functionName}' returns '{returnType}' but variable '{variableName}' is of type '{currentType}'", _currentLineIndex);
                         return string.Empty;
                     }
 
                     if (returnType == "void")
                     {
-                        _tools.ShowError($"Cannot assign result of void function '{functionName}' to variable '{variableName}'");
+                        _tools.ShowError($"Cannot assign result of void function '{functionName}' to variable '{variableName}'", _currentLineIndex);
                         return string.Empty;
                     }
                 }
@@ -469,7 +474,7 @@ namespace PoliteCode
                 int openParenIndex = inputTokens.IndexOf("(");
                 if (openParenIndex == -1 || openParenIndex <= 3)
                 {
-                    _tools.ShowError($"Missing opening parenthesis after function name '{functionName}'");
+                    _tools.ShowError($"Missing opening parenthesis after function name '{functionName}'", _currentLineIndex);
                     return string.Empty;
                 }
 
@@ -496,7 +501,7 @@ namespace PoliteCode
 
                 if (closeParenIndex == -1)
                 {
-                    _tools.ShowError("Missing closing parenthesis in function call");
+                    _tools.ShowError("Missing closing parenthesis in function call", _currentLineIndex);
                     return string.Empty;
                 }
 
@@ -525,7 +530,7 @@ namespace PoliteCode
                         {
                             if (!VariableExists(trimmedParam))
                             {
-                                _tools.ShowError($"Parameter '{trimmedParam}' is not a declared variable.");
+                                _tools.ShowError($"Parameter '{trimmedParam}' is not a declared variable.", _currentLineIndex);
                                 return string.Empty;
                             }
                         }
@@ -554,7 +559,7 @@ namespace PoliteCode
 
             if (!_expressionValidator.IsValid(expression, currentType, out string errorMsg))
             {
-                _tools.ShowError($"Invalid expression: {errorMsg}");
+                _tools.ShowError($"Invalid expression: {errorMsg}", _currentLineIndex);
                 return string.Empty;
             }
 
@@ -571,7 +576,7 @@ namespace PoliteCode
         {
             if (tokens.Count < 2)
             {
-                _tools.ShowError("Missing text to print");
+                _tools.ShowError("Missing text to print", _currentLineIndex);
                 return string.Empty;
             }
 
@@ -592,7 +597,7 @@ namespace PoliteCode
                 {
                     if (!VariableExists(inputTokens[1]))
                     {
-                        _tools.ShowError($"Variable '{inputTokens[1]}' does not exist");
+                        _tools.ShowError($"Variable '{inputTokens[1]}' does not exist", _currentLineIndex);
                         return string.Empty;
                     }
                     expression.Append(inputTokens[1]);
@@ -611,7 +616,7 @@ namespace PoliteCode
                         // בדיקה שהמשתנה קיים (אבל לא כשמדובר ב-add שהוא אופרטור)
                         if (!VariableExists(inputTokens[i]))
                         {
-                            _tools.ShowError($"Variable '{inputTokens[i]}' does not exist");
+                            _tools.ShowError($"Variable '{inputTokens[i]}' does not exist", _currentLineIndex);
                             return string.Empty;
                         }
                         expression.Append(inputTokens[i]);
@@ -643,14 +648,14 @@ namespace PoliteCode
                 {
                     if (!VariableExists(inputTokens[1]))
                     {
-                        _tools.ShowError($"Variable '{inputTokens[1]}' does not exist");
+                        _tools.ShowError($"Variable '{inputTokens[1]}' does not exist", _currentLineIndex);
                         return string.Empty;
                     }
                     valueToPrint = inputTokens[1];
                 }
                 else
                 {
-                    _tools.ShowError("Invalid print value. Expected string or variable name.");
+                    _tools.ShowError("Invalid print value. Expected string or variable name.", _currentLineIndex);
                     return string.Empty;
                 }
 
@@ -664,11 +669,17 @@ namespace PoliteCode
         /// <param name="tokens">רשימת סוגי טוקנים</param>
         /// <param name="inputTokens">רשימת מחרוזות טוקן</param>
         /// <returns>קוד C# מיוצר</returns>
+        /// <summary>
+        /// עיבוד הוראת לולאה (for או while)
+        /// </summary>
+        /// <param name="tokens">רשימת סוגי טוקנים</param>
+        /// <param name="inputTokens">רשימת מחרוזות טוקן</param>
+        /// <returns>קוד C# מיוצר</returns>
         private string ProcessLoopStatement(List<TokenType> tokens, List<string> inputTokens)
         {
             if (tokens.Count < 2)
             {
-                _tools.ShowError("Incomplete loop statement");
+                _tools.ShowError("Incomplete loop statement", _currentLineIndex);
                 return string.Empty;
             }
 
@@ -682,7 +693,7 @@ namespace PoliteCode
             }
             else
             {
-                _tools.ShowError("Not clear which loop type to use. Use 'from' for for-loops or 'while' for while-loops.");
+                _tools.ShowError("Not clear which loop type to use. Use 'from' for for-loops or 'while' for while-loops.", _currentLineIndex);
                 return string.Empty;
             }
         }
@@ -701,7 +712,7 @@ namespace PoliteCode
 
             if (fromIndex == -1 || toIndex == -1 || fromIndex >= toIndex)
             {
-                _tools.ShowError("Invalid for-loop format. Expected 'thank you for looping from [start] to [end]'");
+                _tools.ShowError("Invalid for-loop format. Expected 'thank you for looping from [start] to [end]'", _currentLineIndex);
                 return string.Empty;
             }
 
@@ -712,14 +723,14 @@ namespace PoliteCode
             // בדיקה אם הערכים תקינים
             if (string.IsNullOrEmpty(startValue) || string.IsNullOrEmpty(endValue))
             {
-                _tools.ShowError("Missing start or end value in for-loop");
+                _tools.ShowError("Missing start or end value in for-loop", _currentLineIndex);
                 return string.Empty;
             }
 
             // בדיקה אם יש סוגר פתיחה (חובה)
             if (!inputTokens.Contains("{"))
             {
-                _tools.ShowError("Missing opening brace '{' in for-loop. Please add it at the end of your loop statement.");
+                _tools.ShowError("Missing opening brace '{' in for-loop. Please add it at the end of your loop statement.", _currentLineIndex);
                 return string.Empty;
             }
 
@@ -743,24 +754,24 @@ namespace PoliteCode
 
             if (whileIndex == -1 || whileIndex + 1 >= inputTokens.Count)
             {
-                _tools.ShowError("Invalid while-loop format. Expected 'thank you for looping while [condition]'");
+                _tools.ShowError("Invalid while-loop format. Expected 'thank you for looping while [condition]'", _currentLineIndex);
                 return string.Empty;
             }
 
             // בניית הביטוי המלא אחרי מילת המפתח "while"
             string conditionExpression = string.Join(" ", inputTokens.Skip(whileIndex + 1)
-                                                                     .TakeWhile(token => token != "{"))
-                                                .Trim();
+                                                                         .TakeWhile(token => token != "{"))
+                                                    .Trim();
 
             if (string.IsNullOrWhiteSpace(conditionExpression))
             {
-                _tools.ShowError("Missing condition in while loop");
+                _tools.ShowError("Missing condition in while loop", _currentLineIndex);
                 return string.Empty;
             }
 
             if (!inputTokens.Contains("{"))
             {
-                _tools.ShowError("Missing opening brace '{' in while-loop. Please add it at the end.");
+                _tools.ShowError("Missing opening brace '{' in while-loop. Please add it at the end.", _currentLineIndex);
                 return string.Empty;
             }
 
@@ -768,7 +779,7 @@ namespace PoliteCode
             string firstToken = inputTokens[whileIndex + 1];
             if (!VariableExists(firstToken) || !TryGetVariableType(firstToken, out string varType))
             {
-                _tools.ShowError($"Unknown or undeclared variable: '{firstToken}'");
+                _tools.ShowError($"Unknown or undeclared variable: '{firstToken}'", _currentLineIndex);
                 return string.Empty;
             }
 
@@ -779,7 +790,7 @@ namespace PoliteCode
 
             if (!_expressionEvaluator.IsValidCondition(conditionExpression, varType, out string errorMsg))
             {
-                _tools.ShowError("Invalid condition syntax in while-loop: " + errorMsg);
+                _tools.ShowError("Invalid condition syntax in while-loop: " + errorMsg, _currentLineIndex);
                 return string.Empty;
             }
 
@@ -805,30 +816,30 @@ namespace PoliteCode
 
             if (ifIndex == -1 || ifIndex + 1 >= inputTokens.Count)
             {
-                _tools.ShowError("Invalid if statement format. Expected 'thank you for checking if [condition]'");
+                _tools.ShowError("Invalid if statement format. Expected 'thank you for checking if [condition]'", _currentLineIndex);
                 return string.Empty;
             }
 
             string conditionExpression = string.Join(" ", inputTokens.Skip(ifIndex + 1)
-                                                                     .TakeWhile(token => token != "{"))
-                                                .Trim();
+                                                                         .TakeWhile(token => token != "{"))
+                                                    .Trim();
 
             if (string.IsNullOrWhiteSpace(conditionExpression))
             {
-                _tools.ShowError("Missing condition in if statement");
+                _tools.ShowError("Missing condition in if statement", _currentLineIndex);
                 return string.Empty;
             }
 
             if (!inputTokens.Contains("{"))
             {
-                _tools.ShowError("Missing opening brace '{' in if statement. Please add it at the end.");
+                _tools.ShowError("Missing opening brace '{' in if statement. Please add it at the end.", _currentLineIndex);
                 return string.Empty;
             }
 
             string firstToken = inputTokens[ifIndex + 1];
             if (!VariableExists(firstToken) || !TryGetVariableType(firstToken, out string varType))
             {
-                _tools.ShowError($"Unknown or undeclared variable: '{firstToken}'");
+                _tools.ShowError($"Unknown or undeclared variable: '{firstToken}'", _currentLineIndex);
                 return string.Empty;
             }
 
@@ -839,7 +850,7 @@ namespace PoliteCode
 
             if (!_expressionEvaluator.IsValidCondition(conditionExpression, varType, out string errorMsg))
             {
-                _tools.ShowError("Invalid condition syntax in if-statement: " + errorMsg);
+                _tools.ShowError("Invalid condition syntax in if-statement: " + errorMsg, _currentLineIndex);
                 return string.Empty;
             }
 
@@ -863,14 +874,14 @@ namespace PoliteCode
             // בדיקה אם אנחנו בתוך פונקציה
             if (_currentFunctionName == null)
             {
-                _tools.ShowError("'thank you for returning' ניתן להשתמש רק בתוך פונקציה");
+                _tools.ShowError("'thank you for returning' ניתן להשתמש רק בתוך פונקציה", _currentLineIndex);
                 return string.Empty;
             }
 
             // מציאת סוג ההחזרה של הפונקציה הנוכחית
             if (!_functionMap.TryGetValue(_currentFunctionName, out string expectedReturnType))
             {
-                _tools.ShowError($"לא ניתן לקבוע את סוג ההחזרה של הפונקציה '{_currentFunctionName}'");
+                _tools.ShowError($"לא ניתן לקבוע את סוג ההחזרה של הפונקציה '{_currentFunctionName}'", _currentLineIndex);
                 return string.Empty;
             }
 
@@ -879,7 +890,7 @@ namespace PoliteCode
             {
                 if (tokens.Count > 1)
                 {
-                    _tools.ShowError("פונקציות מסוג void לא יכולות להחזיר ערך");
+                    _tools.ShowError("פונקציות מסוג void לא יכולות להחזיר ערך", _currentLineIndex);
                     return string.Empty;
                 }
                 return "return;";
@@ -888,7 +899,7 @@ namespace PoliteCode
             // לפונקציות שאינן void, צריך ערך החזרה
             if (tokens.Count < 2)
             {
-                _tools.ShowError($"פונקציה '{_currentFunctionName}' צריכה להחזיר ערך מסוג '{expectedReturnType}'");
+                _tools.ShowError($"פונקציה '{_currentFunctionName}' צריכה להחזיר ערך מסוג '{expectedReturnType}'", _currentLineIndex);
                 return string.Empty;
             }
 
@@ -903,7 +914,7 @@ namespace PoliteCode
             // בדיקה שטיפוס הביטוי תואם את טיפוס ההחזרה המצופה
             if (!_expressionValidator.IsValid(returnExpression, expectedReturnType, out string errorMsg))
             {
-                _tools.ShowError($"ביטוי החזרה לא תקין: {errorMsg}");
+                _tools.ShowError($"ביטוי החזרה לא תקין: {errorMsg}", _currentLineIndex);
                 return string.Empty;
             }
 
@@ -933,7 +944,7 @@ namespace PoliteCode
             // בדיקה אם הפונקציה קיימת
             if (!_functionMap.ContainsKey(functionName))
             {
-                _tools.ShowError($"Function '{functionName}' does not exist or was not declared.");
+                _tools.ShowError($"Function '{functionName}' does not exist or was not declared.", _currentLineIndex);
                 return string.Empty;
             }
 
@@ -946,7 +957,7 @@ namespace PoliteCode
                     // אם זו פונקציית void, אי אפשר להקצות את התוצאה שלה למשתנה
                     if (returnType == "void")
                     {
-                        _tools.ShowError($"Cannot assign result of void function '{functionName}' to variable '{variableName}'");
+                        _tools.ShowError($"Cannot assign result of void function '{functionName}' to variable '{variableName}'", _currentLineIndex);
                         return string.Empty;
                     }
 
@@ -955,7 +966,7 @@ namespace PoliteCode
                     {
                         if (returnType != variableType)
                         {
-                            _tools.ShowError($"Type mismatch: Function '{functionName}' returns '{returnType}' but variable '{variableName}' is of type '{variableType}'");
+                            _tools.ShowError($"Type mismatch: Function '{functionName}' returns '{returnType}' but variable '{variableName}' is of type '{variableType}'", _currentLineIndex);
                             return string.Empty;
                         }
                     }
@@ -965,7 +976,7 @@ namespace PoliteCode
             // וידוא שיש סוגר פתיחה
             if (callIndex + 2 >= inputTokens.Count || inputTokens[callIndex + 2] != "(")
             {
-                _tools.ShowError($"Missing opening parenthesis after function name '{functionName}'");
+                _tools.ShowError($"Missing opening parenthesis after function name '{functionName}'", _currentLineIndex);
                 return string.Empty;
             }
 
@@ -985,7 +996,7 @@ namespace PoliteCode
 
             if (closeParenIndex == -1)
             {
-                _tools.ShowError("Missing closing parenthesis in function call");
+                _tools.ShowError("Missing closing parenthesis in function call", _currentLineIndex);
                 return string.Empty;
             }
 
@@ -1016,7 +1027,7 @@ namespace PoliteCode
                     {
                         if (!VariableExists(trimmedParam))
                         {
-                            _tools.ShowError($"Parameter '{trimmedParam}' is not a declared variable.");
+                            _tools.ShowError($"Parameter '{trimmedParam}' is not a declared variable.", _currentLineIndex);
                             return string.Empty;
                         }
                     }
@@ -1048,25 +1059,25 @@ namespace PoliteCode
         {
             if (tokens.Count < 6)
             {
-                _tools.ShowError("Function definition is too short. Must include return type, name, parameters, and braces.");
+                _tools.ShowError("Function definition is too short. Must include return type, name, parameters, and braces.", _currentLineIndex);
                 return string.Empty;
             }
 
             if (tokens[3] != TokenType.OpenParen)
             {
-                _tools.ShowError("Expected '(' at position 3 in function definition");
+                _tools.ShowError("Expected '(' at position 3 in function definition", _currentLineIndex);
                 return string.Empty;
             }
 
             if (tokens[tokens.Count - 2] != TokenType.CloseParen)
             {
-                _tools.ShowError("Expected ')' to be the second to last token");
+                _tools.ShowError("Expected ')' to be the second to last token", _currentLineIndex);
                 return string.Empty;
             }
 
             if (tokens[tokens.Count - 1] != TokenType.OpenBrace)
             {
-                _tools.ShowError("Expected '{' to be the last token of the function header");
+                _tools.ShowError("Expected '{' to be the last token of the function header", _currentLineIndex);
                 return string.Empty;
             }
 
@@ -1081,7 +1092,7 @@ namespace PoliteCode
 
             if (_functionMap.ContainsKey(functionName))
             {
-                _tools.ShowError($"Function '{functionName}' is already defined.");
+                _tools.ShowError($"Function '{functionName}' is already defined.", _currentLineIndex);
                 return string.Empty;
             }
 
@@ -1093,7 +1104,7 @@ namespace PoliteCode
             if (functionName == "main" && tokens.Count != 6)
             {
                 _tools.ShowError("if you create the main function, the build is like this:" +
-                    "\nplease define function main(){\n you cannot use any parameters!");
+                    "\nplease define function main(){\n you cannot use any parameters!", _currentLineIndex);
                 return string.Empty;
             }
 
@@ -1106,13 +1117,13 @@ namespace PoliteCode
             {
                 if (i + 1 >= tokens.Count - 2)
                 {
-                    _tools.ShowError("Incomplete parameter pair in function definition");
+                    _tools.ShowError("Incomplete parameter pair in function definition", _currentLineIndex);
                     return string.Empty;
                 }
 
                 if (tokens[i] != TokenType.VariableType || tokens[i + 1] != TokenType.VariableName)
                 {
-                    _tools.ShowError($"Invalid parameter at position {i}: expected [type name]");
+                    _tools.ShowError($"Invalid parameter at position {i}: expected [type name]", _currentLineIndex);
                     return string.Empty;
                 }
 
@@ -1121,13 +1132,13 @@ namespace PoliteCode
 
                 if (_functionMap.ContainsKey(name))
                 {
-                    _tools.ShowError($"Parameter name '{name}' conflicts with an existing function name.");
+                    _tools.ShowError($"Parameter name '{name}' conflicts with an existing function name.", _currentLineIndex);
                     return string.Empty;
                 }
 
                 if (VariableExists(name))
                 {
-                    _tools.ShowError($"Parameter name '{name}' conflicts with an existing variable.");
+                    _tools.ShowError($"Parameter name '{name}' conflicts with an existing variable.", _currentLineIndex);
                     return string.Empty;
                 }
 
@@ -1281,7 +1292,7 @@ namespace PoliteCode
             foreach (string line in lines)
             {
                 // הוסף הזחה של 8 רווחים (כי הקוד כבר בהזחה של 4 רווחים פנימה בתוך הפונקציות)
-                fullCode.AppendLine("  " + line);
+                fullCode.AppendLine(" " + line);
             }
 
             // סגור את מחלקת Program והנפיימספייס
