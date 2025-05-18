@@ -58,6 +58,56 @@ namespace PoliteCode
             { "thank you for returning", "return" }
         };
 
+        // מילון חדש לזיהוי טוקנים - מילות מפתח קבועות
+        private static readonly Dictionary<string, TokenType> _tokenTypeMap = new Dictionary<string, TokenType>
+        {
+            { "please call", TokenType.CallFunction },
+            { "please define function", TokenType.DefineFunction },
+            { "please create", TokenType.Create },
+            { "thank you for printing", TokenType.Print },
+            { "thank you for checking if", TokenType.IfCondition },
+            { "thank you for looping", TokenType.Loop },
+            { "thank you for returning", TokenType.Return },
+            { "from", TokenType.FromKeyword },
+            { "to", TokenType.ToKeyword },
+            { "while", TokenType.WhileKeyword },
+            { "true", TokenType.Boolean },
+            { "false", TokenType.Boolean },
+            { "equals", TokenType.Equals },
+            { "{", TokenType.OpenBrace },
+            { "}", TokenType.CloseBrace },
+            { "(", TokenType.OpenParen },
+            { ")", TokenType.CloseParen },
+            { "\n", TokenType.Terminator }
+        };
+
+        // מילון לטיפוסי משתנים
+        private static readonly Dictionary<string, string> _typeMap = new Dictionary<string, string>
+        {
+            { "integer", "integer" },
+            { "text", "text" },
+            { "decimal", "decimal" },
+            { "boolean", "boolean" },
+            { "void", "void" }
+        };
+
+        // סט לתנאים
+        private static readonly HashSet<string> _conditionSet = new HashSet<string>
+        {
+            "less then", "greater then", "equal to", "different from",
+            "less or equal to", "greater or equal to"
+        };
+
+        // ביטויים רגולריים מקומפלים מראש
+        // מספר
+        private static readonly Regex _numberRegex = new Regex(@"^-?\d+(\.\d+)?$", RegexOptions.Compiled);
+
+        //אם זה סטרינג 
+        private static readonly Regex _stringLiteralRegex = new Regex("^\".*\"$", RegexOptions.Compiled);
+        
+        //אם זה משתנה
+        private static readonly Regex _variableNameRegex = new Regex(@"^[a-zA-Z_]\w*$", RegexOptions.Compiled);
+
         /// <summary>
         /// מבצע טוקניזציה של שורת קלט ב-PoliteCode
         /// </summary>
@@ -96,46 +146,39 @@ namespace PoliteCode
         }
 
         /// <summary>
-        /// מזהה את סוג הטוקן
+        /// מזהה את סוג הטוקן - גרסה משופרת עם מילונים
         /// </summary>
         public TokenType IdentifyToken(string value)
         {
-            // זיהוי סוג הטוקן בהתבסס על מחרוזת הקלט
-            if (value == "please call") 
-                return TokenType.CallFunction;
-            if (value == "please define function") return TokenType.DefineFunction;
-            if (value == "please create") return TokenType.Create;
-            if (value == "thank you for printing") return TokenType.Print;
-            if (value == "thank you for checking if") return TokenType.IfCondition;
-            if (value == "thank you for looping") return TokenType.Loop;
-            if (value == "thank you for returning") return TokenType.Return;
-            if (value == "from") return TokenType.FromKeyword;
-            if (value == "to") return TokenType.ToKeyword;
-            if (value == "while") return TokenType.WhileKeyword;
-            if (value == "true" || value == "false") return TokenType.Boolean;
-            if (Regex.IsMatch(value, @"^(less then|greater then|equal to|different from|less or equal to|greater or equal to)$")) return TokenType.Condition;
+            // 1. בדיקת מילות מפתח במילון - חיפוש O(1)
+            if (_tokenTypeMap.TryGetValue(value, out TokenType tokenType))
+                return tokenType;
 
-            if (value == "integer" || value == "text" || value == "decimal" || value == "boolean" || value == "void")
+            // 2. בדיקת טיפוסי משתנים
+            if (_typeMap.ContainsKey(value))
             {
                 _currentVariableType = value;
                 return TokenType.VariableType;
             }
 
-            if (Regex.IsMatch(value, @"^-?\d+(\.\d+)?$")) return TokenType.Number;
-            if (Regex.IsMatch(value, "^\".*\"$")) return TokenType.StringLiteral;
-            if (value == "\n") return TokenType.Terminator;
-            if (value == "equals") return TokenType.Equals;
-            if (value == "{") return TokenType.OpenBrace;
-            if (value == "}") return TokenType.CloseBrace;
-            if (value == "(") return TokenType.OpenParen;
-            if (value == ")") return TokenType.CloseParen;
+            // 3. בדיקת תנאים 
+            if (_conditionSet.Contains(value))
+                return TokenType.Condition;
 
-            if (Regex.IsMatch(value, @"^[a-zA-Z_]\w*$"))
+            // 4. בדיקות עם ביטויים רגולריים
+            if (_numberRegex.IsMatch(value))
+                return TokenType.Number;
+
+            if (_stringLiteralRegex.IsMatch(value))
+                return TokenType.StringLiteral;
+
+            if (_variableNameRegex.IsMatch(value))
             {
                 _currentVariableName = value;
                 return TokenType.VariableName;
             }
 
+            // ברירת מחדל - טוקן לא מוכר
             return TokenType.Unknown;
         }
 
