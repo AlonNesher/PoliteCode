@@ -1175,8 +1175,9 @@ namespace PoliteCode
         private void PopScope()
         {
             if (_variableScopes.Count > 0)
+            {
                 _variableScopes.Pop();
-                _variableScopes.Pop();
+            }
         }
 
         /// <summary>
