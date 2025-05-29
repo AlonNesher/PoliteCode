@@ -13,7 +13,7 @@ namespace PoliteCode.Validation
         private Dictionary<S, Dictionary<T, S>> states;
         private HashSet<S> endingStates;
 
-        // Tracking variable types during validation
+        // מעקב אחר סוגי משתנים במהלך האימות
         private Dictionary<string, string> _variableTypes;
 
         public ExpressionValidator()
@@ -22,7 +22,7 @@ namespace PoliteCode.Validation
             _variableTypes = new Dictionary<string, string>();
         }
 
-        // Set available variables and their types for validation
+        // הגדרת משתנים זמינים וסוגיהם לאימות
         public void SetVariableTypes(Dictionary<string, string> variableTypes)
         {
             _variableTypes = variableTypes ?? new Dictionary<string, string>();
@@ -115,7 +115,7 @@ namespace PoliteCode.Validation
         {
             input = Regex.Replace(input, @"(add|sub|mul|div)(?=\d)", "$1 ");
 
-            // מזהה מספרים, אופרטורים, סוגריים, ושמות משתנים (אלפא-נומריים שמתחילים באות)
+            // זיהוי מספרים, אופרטורים, סוגריים, ושמות משתנים (אלפא-נומריים שמתחילים באות)
             string pattern = @"-?\d+(\.\d+)?|add|sub|mul|div|\(|\)|""[^""]*""|true|false|[a-zA-Z_]\w*";
 
             var matches = Regex.Matches(input, pattern);
@@ -150,12 +150,12 @@ namespace PoliteCode.Validation
                 {
                     var tokenType = GetToken(token);
 
-                    // Check variable types in expression
+                    // בדיקת סוגי משתנים בביטוי
                     if (tokenType == T.var)
                     {
                         if (_variableTypes.TryGetValue(token, out string varType))
                         {
-                            // Check if variable type is compatible with the expected type
+                            // בדיקה אם סוג המשתנה תואם לסוג הצפוי
                             if (!AreTypesCompatible(varType, expectedType))
                             {
                                 errorMsg = $"Type mismatch: variable '{token}' is of type '{varType}' but expression expects '{expectedType}'";
@@ -164,27 +164,27 @@ namespace PoliteCode.Validation
                         }
                         else
                         {
-                            // Variable not found, this should be caught earlier
+                            // משתנה לא נמצא, זה צריך להיקלט קודם
                             errorMsg = $"Variable '{token}' not found in current scope";
                             return null;
                         }
                     }
 
-                    // Check string literals in non-text contexts
+                    // בדיקת מחרוזות בהקשרים שאינם טקסט
                     if (tokenType == T.str && expectedType != "text")
                     {
                         errorMsg = $"Type mismatch: string literal cannot be used in a '{expectedType}' expression";
                         return null;
                     }
 
-                    // Check numeric values in text contexts
+                    // בדיקת ערכים מספריים בהקשרי טקסט
                     if (tokenType == T.num && expectedType == "text" &&
                         (i > 0 && GetToken(tokens[i - 1]) == T.str))
                     {
-                        // Allow numeric literals after strings with add operator
+                        // אפשר מספרים אחרי מחרוזות עם אופרטור add
                         if (i >= 2 && tokens[i - 2] == "add")
                         {
-                            // This is allowed (string "hi" add 5)
+                            // זה מותר (string "hi" add 5)
                         }
                         else
                         {
@@ -193,7 +193,7 @@ namespace PoliteCode.Validation
                         }
                     }
 
-                    // Check boolean literals in non-boolean contexts
+                    // בדיקת ערכים בוליאניים בהקשרים שאינם בוליאניים
                     if (tokenType == T.bool_val && expectedType != "boolean")
                     {
                         errorMsg = $"Type mismatch: boolean literal cannot be used in a '{expectedType}' expression";
@@ -216,12 +216,12 @@ namespace PoliteCode.Validation
 
         private bool AreTypesCompatible(string type1, string type2)
         {
-            // Basic type compatibility
+            // תאימות בסיסית של סוגים
             if (type1 == type2) return true;
 
-            // Special cases
-            if (type1 == "integer" && type2 == "decimal") return true; // Integer can be used in decimal expressions
-            if (type1 == "decimal" && type2 == "integer") return true; // Decimal can be used in integer expressions but will be truncated
+            // מקרים מיוחדים
+            if (type1 == "integer" && type2 == "decimal") return true; // שלם יכול לשמש בביטויים עשרוניים
+            if (type1 == "decimal" && type2 == "integer") return true; // עשרוני יכול לשמש בביטויים שלמים אך יקוצץ
 
             return false;
         }
@@ -235,19 +235,19 @@ namespace PoliteCode.Validation
         private T GetToken(string token)
         {
             if (double.TryParse(token, out _)) return T.num;
-            if (token.StartsWith("\"") && token.EndsWith("\"")) return T.str; // Added string literal detection
-            if (token == "true" || token == "false") return T.bool_val; // Added boolean literal detection
+            if (token.StartsWith("\"") && token.EndsWith("\"")) return T.str; // זיהוי מחרוזות
+            if (token == "true" || token == "false") return T.bool_val; // זיהוי ערכים בוליאניים
             if (token == "add") return T.plus;
             if (token == "sub") return T.min;
             if (token == "mul") return T.mul;
             if (token == "div") return T.div;
             if (token == "(") return T.open;
             if (token == ")") return T.close;
-            if (Regex.IsMatch(token, @"^[a-zA-Z_]\w*$")) return T.var; // Changed to 'var' for variable names
+            if (Regex.IsMatch(token, @"^[a-zA-Z_]\w*$")) return T.var; // שמות משתנים
             return T.wtf;
         }
 
-        #region type validators
+        #region מאמתי סוגים
         public bool IsValid_integer(string expr, out string errorMsg)
         {
             var inputTokens = Tokenize(expr);
@@ -312,7 +312,7 @@ namespace PoliteCode.Validation
             // רווחים בין מילים למספרים
             expr = Regex.Replace(expr, @"(add|sub|mul|div)(?=\d)", "$1 ");
 
-            // שלח לבדיקה דרך FSM
+            // שליחה לבדיקה דרך FSM
             var inputTokens = Tokenize(expr);
             var tokenTypes = ConvertToTokens(inputTokens, "decimal", out errorMsg);
 
@@ -369,7 +369,7 @@ namespace PoliteCode.Validation
                 return true;
             }
 
-            // Allow variables of boolean type
+            // אפשר משתנים מסוג בוליאני
             if (Regex.IsMatch(expr, @"^[a-zA-Z_]\w*$") &&
                 _variableTypes.TryGetValue(expr, out string varType) &&
                 varType == "boolean")
@@ -391,7 +391,7 @@ namespace PoliteCode.Validation
                 return false;
             }
 
-            // Special case for single variable of text type
+            // מקרה מיוחד למשתנה יחיד מסוג טקסט
             if (tokens.Count == 1 && Regex.IsMatch(tokens[0], @"^[a-zA-Z_]\w*$"))
             {
                 if (_variableTypes.TryGetValue(tokens[0], out string varType) && varType == "text")
@@ -406,16 +406,16 @@ namespace PoliteCode.Validation
                 }
             }
 
-            // Basic string validation
+            // אימות בסיסי של מחרוזות
             var tokenTypes = ConvertToTokens(tokens, "text", out errorMsg);
             if (tokenTypes == null)
                 return false;
 
-            // Check for patterns of valid string expressions
+            // בדיקת דפוסים של ביטויי מחרוזת תקינים
             for (int i = 0; i < tokens.Count; i++)
             {
-                // Check tokens by position and pattern
-                if (i % 2 == 0) // Should be string literals or variables
+                // בדיקת טוקנים לפי מיקום ודפוס
+                if (i % 2 == 0) // צריך להיות מחרוזות או משתנים
                 {
                     bool isStringLiteral = tokens[i].StartsWith("\"") && tokens[i].EndsWith("\"");
                     bool isTextVariable = Regex.IsMatch(tokens[i], @"^[a-zA-Z_]\w*$") &&
@@ -428,7 +428,7 @@ namespace PoliteCode.Validation
                         return false;
                     }
                 }
-                else // Should be 'add' operator
+                else // צריך להיות אופרטור 'add'
                 {
                     if (tokens[i] != "add")
                     {
@@ -438,8 +438,8 @@ namespace PoliteCode.Validation
                 }
             }
 
-            // Support for string concatenation with numbers
-            // e.g., "hello" add 5
+            // תמיכה בחיבור מחרוזות עם מספרים
+            // לדוגמה: "hello" add 5
             if (tokens.Count >= 3 && tokens[tokens.Count - 2] == "add")
             {
                 string lastToken = tokens[tokens.Count - 1];
@@ -448,11 +448,11 @@ namespace PoliteCode.Validation
 
                 if (isNumber)
                 {
-                    // Valid string concatenation with number
+                    // חיבור מחרוזת עם מספר תקין
                 }
                 else if (isVariable)
                 {
-                    // Check if variable is compatible (string, int, decimal)
+                    // בדיקה אם המשתנה תואם (מחרוזת, מספר שלם, עשרוני)
                     if (_variableTypes.TryGetValue(lastToken, out string varType))
                     {
                         if (varType != "text" && varType != "integer" && varType != "decimal")

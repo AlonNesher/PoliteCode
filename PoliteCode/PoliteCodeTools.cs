@@ -7,99 +7,88 @@ using System.Linq;
 
 namespace PoliteCode
 {
-    /// <summary>
-    /// כלי עזר ושירותים עבור PoliteCode, כולל טיפול בשגיאות מפורטות יותר
-    /// </summary>
+    // כלי עזר ושירותים עבור PoliteCode
     public class PoliteCodeTools
     {
-        // שמירת טקסט הקוד המקורי לצורך הצגת הודעות שגיאה מדויקות יותר
-        private List<string> _sourceLines = new List<string>();
-        private Form1 _parentForm; // הפניה לטופס הראשי
+        // מילון המרת סוגים מ-PoliteCode ל-C#
+        private readonly Dictionary<string, string> _politeToCs = new Dictionary<string, string>
+        {
+            { "integer", "int" },
+            { "text", "string" },
+            { "decimal", "double" },
+            { "boolean", "bool" },
+            { "void", "void" }
+        };
 
-        /// <summary>
-        /// הגדרת הטופס הראשי לצורך סימון שורות שגיאה
-        /// </summary>
+        // מילון המרת סוגים מ-C# ל-PoliteCode
+        private readonly Dictionary<string, string> _csToPolite = new Dictionary<string, string>
+        {
+            { "int", "integer" },
+            { "string", "text" },
+            { "double", "decimal" },
+            { "bool", "boolean" },
+            { "void", "void" }
+        };
+
+        // שמירת טקסט הקוד המקורי
+        private List<string> _sourceLines = new List<string>();
+        // הפניה לטופס הראשי
+        private Form1 _parentForm;
+
+        // הגדרת הטופס הראשי
         public void SetParentForm(Form1 form)
         {
             _parentForm = form;
         }
 
-        /// <summary>
-        /// שמירת קוד המקור לצורך הודעות שגיאה מדויקות יותר
-        /// </summary>
+        // שמירת קוד המקור
         public void SetSourceCode(string[] lines)
         {
             _sourceLines = new List<string>(lines);
         }
 
-        /// <summary>
-        /// בדיקת תקינות הביטוי מבחינת תחביר וסמנטיקה
-        /// </summary>
-        /// <param name="expr">ביטוי לבדיקה</param>
-        /// <param name="type">סוג ביטוי צפוי</param>
-        /// <param name="errorMessage">הודעת שגיאה אם הבדיקה נכשלת</param>
-        /// <returns>True אם הביטוי תקין</returns>
+        // בדיקת תקינות הביטוי
         public bool ValidateExpression(string expr, string type, out string errorMessage)
         {
             var validator = new ExpressionValidator();
             return validator.IsValid(expr, type, out errorMessage);
         }
 
-        /// <summary>
-        /// תרגום סוג PoliteCode לסוג C#
-        /// </summary>
-        /// <param name="politeType">סוג PoliteCode</param>
-        /// <returns>סוג C#</returns>
+        // תרגום סוג PoliteCode לסוג C#
         public string TranslateType(string politeType)
         {
-            // המרת סוג PoliteCode לסוג C#
-            switch (politeType)
+            if (_politeToCs.ContainsKey(politeType))
             {
-                case "integer": return "int";
-                case "text": return "string";
-                case "decimal": return "double";
-                case "boolean": return "bool";
-                case "void": return "void";
-                default:
-                    ShowError($"Unknown type: '{politeType}' – please use: integer, text, decimal, boolean, or void.");
-                    return string.Empty;
+                return _politeToCs[politeType];
             }
+
+            ShowError($"Unknown type: '{politeType}' – please use: integer, text, decimal, boolean, or void.");
+            return string.Empty;
         }
 
-        /// <summary>
-        /// תרגום סוג C# לסוג PoliteCode
-        /// </summary>
-        /// <param name="csharpType">סוג C#</param>
-        /// <returns>סוג PoliteCode</returns>
+        // תרגום סוג C# לסוג PoliteCode
         public string TranslateTypeBack(string csharpType)
         {
-            switch (csharpType)
+            if (_csToPolite.ContainsKey(csharpType))
             {
-                case "int": return "integer";
-                case "string": return "text";
-                case "double": return "decimal";
-                case "bool": return "boolean";
-                default: return "unknown";
+                return _csToPolite[csharpType];
             }
+
+            return "unknown";
         }
 
-        /// <summary>
-        /// הצגת הודעת שגיאה מפורטת למשתמש
-        /// </summary>
-        /// <param name="message">הודעת השגיאה</param>
-        /// <param name="lineNumber">מספר השורה בה התרחשה השגיאה, -1 אם לא ידוע</param>
-        /// <param name="columnNumber">מספר העמודה בה התרחשה השגיאה, -1 אם לא ידוע</param>
+        // הצגת הודעת שגיאה מפורטת
         public void ShowError(string message, int lineNumber = -1, int columnNumber = -1)
         {
             string errorMessage = message;
 
-            // אם מספר שורה תקף נמסר, הוסף אותו ואת תוכן השורה להודעה
+            // הוספת פרטי השורה אם זמינים
             if (lineNumber >= 0 && lineNumber < _sourceLines.Count)
             {
                 string lineText = _sourceLines[lineNumber].Trim();
                 string linePointer = string.Empty;
 
-                // הוספת סימון לעמודה הספציפית אם ידועה
+                // סימון עמודה ספציפית
                 if (columnNumber >= 0 && columnNumber < lineText.Length)
                 {
                     linePointer = new string(' ', columnNumber) + "^";
@@ -118,37 +107,25 @@ namespace PoliteCode
                     }
                     catch (Exception ex)
                     {
-                        // במקרה של שגיאה בסימון, פשוט המשך ללא סימון
                         Console.WriteLine($"Warning: Could not highlight error line: {ex.Message}");
                     }
                 }
             }
             else if (lineNumber >= 0)
             {
-                // מקרה שיש מספר שורה אך לא ניתן לקבל את תוכן השורה
                 errorMessage = $"Error at line {lineNumber + 1}:\n{message}";
             }
 
             MessageBox.Show(errorMessage, "Compilation Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
 
-        /// <summary>
-        /// הצגת הודעת מידע (לניפוי שגיאות והתקדמות)
-        /// </summary>
-        /// <param name="message">הודעת מידע</param>
+        // הצגת הודעת מידע
         public void ShowInfo(string message)
         {
-            Console.WriteLine(message); // לניפוי שגיאות ודיווח התקדמות
+            Console.WriteLine(message);
         }
 
-        /// <summary>
-        /// חיפוש מיקום הטוקן בטקסט המקורי
-        /// </summary>
-        /// <param name="token">הטוקן לחיפוש</param>
-        /// <param name="startLineIndex">שורת ההתחלה לחיפוש</param>
-        /// <param name="foundLineIndex">שורה בה נמצא הטוקן (מוחזר)</param>
-        /// <param name="columnIndex">עמודה בה נמצא הטוקן (מוחזר)</param>
-        /// <returns>True אם הטוקן נמצא</returns>
+        // חיפוש מיקום הטוקן בטקסט המקורי
         public bool FindTokenLocation(string token, int startLineIndex, out int foundLineIndex, out int columnIndex)
         {
             foundLineIndex = -1;
@@ -175,11 +152,7 @@ namespace PoliteCode
             return false;
         }
 
-        /// <summary>
-        /// קבלת מספר השורה הנוכחית מהשוואה עם טקסט המקור
-        /// </summary>
-        /// <param name="context">טקסט הקשר</param>
-        /// <returns>מספר השורה, או -1 אם לא נמצא</returns>
+        // קבלת מספר השורה מהקשר
         public int GetLineNumberFromContext(string context)
         {
             if (_sourceLines == null || _sourceLines.Count == 0 || string.IsNullOrEmpty(context))
@@ -187,14 +160,14 @@ namespace PoliteCode
 
             context = context.Trim();
 
-            // ניסיון למצוא התאמה מדויקת של השורה
+            // חיפוש התאמה מדויקת
             for (int i = 0; i < _sourceLines.Count; i++)
             {
                 if (_sourceLines[i].Trim() == context)
                     return i;
             }
 
-            // אם לא נמצא, ננסה לחפש חלקים מהשורה
+            // חיפוש חלקי
             if (context.Length > 10)
             {
                 string partialContext = context.Substring(0, 10);
@@ -208,37 +181,33 @@ namespace PoliteCode
             return -1;
         }
 
-        /// <summary>
-        /// כלי עזר סטטי לבדיקת הקצאות משתנים
-        /// </summary>
-        public static class ValidationHelper
+        // בדיקת תקינות הקצאת משתנה
+        public static bool ValidateVariableAssignment(string variableType, string value)
         {
-            /// <summary>
-            /// בדיקה שערך יכול להיות מוקצה למשתנה מסוג מסוים
-            /// </summary>
-            /// <param name="variableType">סוג המשתנה</param>
-            /// <param name="value">ערך להקצאה</param>
-            /// <returns>True אם ההקצאה תקפה</returns>
-            public static bool ValidateVariableAssignment(string variableType, string value)
+            if (value == null)
             {
-                if (value == null)
-                {
-                    return true; // Null ניתן להקצאה לכל סוג (מוסק כברירת מחדל)
-                }
+                return true; // Null ניתן להקצאה לכל סוג
+            }
 
-                switch (variableType)
-                {
-                    case "integer":
-                        return Regex.IsMatch(value, @"^-?\d+$");
-                    case "decimal":
-                        return Regex.IsMatch(value, @"^-?\d+(\.\d+)?$");
-                    case "boolean":
-                        return value.ToLower() == "true" || value.ToLower() == "false";
-                    case "text":
-                        return value.StartsWith("\"") && value.EndsWith("\"");
-                    default:
-                        return true; // סוג לא ידוע - אפשר הקצאה (או לטפל כשגיאה במקום אחר)
-                }
+            if (variableType == "integer")
+            {
+                return Regex.IsMatch(value, @"^-?\d+$");
+            }
+            else if (variableType == "decimal")
+            {
+                return Regex.IsMatch(value, @"^-?\d+(\.\d+)?$");
+            }
+            else if (variableType == "boolean")
+            {
+                return value.ToLower() == "true" || value.ToLower() == "false";
+            }
+            else if (variableType == "text")
+            {
+                return value.StartsWith("\"") && value.EndsWith("\"");
+            }
+            else
+            {
+                return true; // סוג לא ידוע - אפשר הקצאה
             }
         }
     }

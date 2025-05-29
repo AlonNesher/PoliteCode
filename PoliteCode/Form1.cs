@@ -23,15 +23,16 @@ namespace PoliteCode
         private PoliteCodeTools _tools;
         private Parser _parser;
 
-        
+        // הקונסולה עכשיו מוגדרת בDesigner - לא צריך להגדיר כאן!
+
         public Form1()
         {
             InitializeComponent();
             InitializeComponents();
+            // הוסרה הקריאה InitializeOutputTextBox() כי הקונסולה עכשיו בDesigner
         }
 
         /// אתחול רכיבי המערכת
-       
         private void InitializeComponents()
         {
             // יצירת מופעים של הרכיבים
@@ -41,14 +42,13 @@ namespace PoliteCode
             _codeGenerator = new CodeGenerator(_tokenizer);
             _parser = new Parser(_tokenizer, _codeGenerator, _tools);
         }
-        
 
-        // כפתור הרצה
+        // כפתור הרצה (תרגום)
         private void button1_Click(object sender, EventArgs e)
         {
             try
             {
-                //parser איפוס  - aכל קוד שונה רלוונטי בנפרד 
+                //parser איפוס  - כל קוד שונה רלוונטי בנפרד 
                 _parser.Reset();
 
                 // פיצול הקלט לשורות
@@ -75,7 +75,6 @@ namespace PoliteCode
         }
 
         /// הצגת הקוד המתורגם
-        
         private void ShowFinalCode()
         {
             CodeC.Text = _parser.GetCSharpCode();
@@ -104,6 +103,7 @@ namespace PoliteCode
             }
         }
 
+        // כפתור הרצת הקוד
         private void runCodeBtn_Click(object sender, EventArgs e)
         {
             try
@@ -111,30 +111,153 @@ namespace PoliteCode
                 string csharpCode = CodeC.Text;
                 if (string.IsNullOrWhiteSpace(csharpCode))
                 {
-                    MessageBox.Show("No C# code to run!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    ShowOutput("No C# code to run!", true);
                     return;
                 }
 
-                // העתקת הקוד ללוח
-                Clipboard.SetText(csharpCode);
+                ShowOutput("Compiling and running code...", false);
 
-                // פתיחת הדפדפן עם האתר של .NET Fiddle
-                System.Diagnostics.Process.Start("https://dotnetfiddle.net/");
-
-                // הודעה למשתמש עם הנחיות
-                MessageBox.Show("הקוד הועתק ללוח. האתר .NET Fiddle נפתח בדפדפן.\n" +
-                              "כעת פשוט לחץ Ctrl+V כדי להדביק את הקוד באתר, ואז לחץ על 'Run'.",
-                              "מוכן להרצה", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                // הרצה באופן אסינכרוני כדי לא לחסום את הUI
+                Task.Run(() => RunGeneratedCode(csharpCode));
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"שגיאה: {ex.Message}", "שגיאה", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ShowOutput($"Error: {ex.Message}", true);
             }
         }
 
+        // כפתור ניקוי הקונסולה - חדש!
+        private void clearConsoleBtn_Click(object sender, EventArgs e)
+        {
+            outputTextBox.Clear();
+            outputTextBox.Text = "🖥️ Console Output\r\n" + new string('─', 35) + "\r\n";
+            outputTextBox.SelectionStart = outputTextBox.Text.Length;
+            outputTextBox.ScrollToCaret();
+        }
 
-        // סימון שורה עם שגיאה בתיבת הטקסט -error hanlding
-       
+        /// הרצת הקוד בקומפיילר פנימי
+        private void RunGeneratedCode(string csharpCode)
+        {
+            try
+            {
+                // יצירת קומפיילר
+                CSharpCodeProvider provider = new CSharpCodeProvider();
+                CompilerParameters parameters = new CompilerParameters();
+
+                // הגדרות קומפיילציה
+                parameters.GenerateInMemory = true;
+                parameters.GenerateExecutable = false; // DLL במקום EXE
+                parameters.TreatWarningsAsErrors = false;
+                parameters.WarningLevel = 3;
+
+                // הוספת רפרנסים נדרשים
+                parameters.ReferencedAssemblies.Add("System.dll");
+                parameters.ReferencedAssemblies.Add("System.Core.dll");
+                parameters.ReferencedAssemblies.Add("System.Console.dll");
+                parameters.ReferencedAssemblies.Add("System.Runtime.dll");
+                parameters.ReferencedAssemblies.Add("netstandard.dll");
+
+                // קומפיילציה
+                CompilerResults results = provider.CompileAssemblyFromSource(parameters, csharpCode);
+
+                // בדיקת שגיאות קומפיילציה
+                if (results.Errors.HasErrors)
+                {
+                    StringBuilder errorMsg = new StringBuilder();
+                    errorMsg.AppendLine("Compilation Errors:");
+
+                    foreach (CompilerError error in results.Errors)
+                    {
+                        if (!error.IsWarning)
+                        {
+                            errorMsg.AppendLine($"Line {error.Line}: {error.ErrorText}");
+                        }
+                    }
+
+                    ShowOutput(errorMsg.ToString(), true);
+                    return;
+                }
+
+                // הרצת הקוד
+                Assembly assembly = results.CompiledAssembly;
+                Type programType = assembly.GetType("Program");
+
+                if (programType == null)
+                {
+                    ShowOutput("Error: Program class not found", true);
+                    return;
+                }
+
+                MethodInfo mainMethod = programType.GetMethod("Main", BindingFlags.Static | BindingFlags.Public);
+
+                if (mainMethod == null)
+                {
+                    ShowOutput("Error: Main method not found", true);
+                    return;
+                }
+
+                // שמירת הקונסולה המקורית
+                TextWriter originalConsoleOut = Console.Out;
+
+                // יצירת StringWriter לתפיסת הפלט
+                using (StringWriter stringWriter = new StringWriter())
+                {
+                    Console.SetOut(stringWriter);
+
+                    try
+                    {
+                        // הרצת הפונקציה
+                        if (mainMethod.GetParameters().Length == 0)
+                            mainMethod.Invoke(null, null);
+                        else
+                            mainMethod.Invoke(null, new object[] { new string[0] });
+
+                        // קבלת הפלט
+                        string output = stringWriter.ToString();
+                        ShowOutput("Program Output:", false);
+                        ShowOutput(output.Length > 0 ? output : "(No output produced)", false);
+                    }
+                    catch (Exception ex)
+                    {
+                        ShowOutput($"Runtime Error: {ex.InnerException?.Message ?? ex.Message}", true);
+                    }
+                    finally
+                    {
+                        // החזרת הקונסולה המקורית
+                        Console.SetOut(originalConsoleOut);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ShowOutput($"Compilation Error: {ex.Message}", true);
+            }
+        }
+
+        /// הצגת פלט בTextBox הקונסولה - מעודכן עם גלילה טובה יותר
+        private void ShowOutput(string output, bool isError)
+        {
+            if (outputTextBox.InvokeRequired)
+            {
+                outputTextBox.Invoke(new Action(() => {
+                    outputTextBox.AppendText(output + "\r\n");
+                    outputTextBox.ForeColor = isError ? Color.Red : Color.LimeGreen;
+                    // גלילה אוטומטית לסוף
+                    outputTextBox.SelectionStart = outputTextBox.Text.Length;
+                    outputTextBox.ScrollToCaret();
+                }));
+            }
+            else
+            {
+                outputTextBox.AppendText(output + "\r\n");
+                outputTextBox.ForeColor = isError ? Color.Red : Color.LimeGreen;
+                // גלילה אוטומטית לסוף
+                outputTextBox.SelectionStart = outputTextBox.Text.Length;
+                outputTextBox.ScrollToCaret();
+            }
+        }
+
+        // סימון שורה עם שגיאה בתיבת הטקסט -error handling
         public void HighlightErrorLine(int lineNumber)
         {
             if (lineNumber < 0 || input == null || lineNumber >= input.Lines.Length)
@@ -156,12 +279,17 @@ namespace PoliteCode
                 input.Focus();
 
                 // אפשרות: שינוי צבע הרקע של השורה
-                // צריך לדאוג לשחזר את הצבע המקורי בהמשך
+                // צריך לדאוג לשחזור את הצבע המקורי בהמשך
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error highlighting line: {ex.Message}");
             }
+        }
+
+        private void outputTextBox_TextChanged(object sender, EventArgs e)
+        {
+
         }
     }
 }
