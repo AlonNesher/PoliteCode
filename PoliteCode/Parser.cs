@@ -8,9 +8,7 @@ using static PoliteCode.Tokenizer;
 
 namespace PoliteCode
 {
-    /// <summary>
-    /// אחראי על ניתוח הטוקנים ויצירת קוד C#
-    /// </summary>
+     // אחראי על ניתוח הטוקנים ויצירת קוד C#
     public class Parser
     {
         // מצבי ניתוח
@@ -58,9 +56,7 @@ namespace PoliteCode
         // מילון המקשר כל סוג טוקן לפונקציית העיבוד שלו
         private Dictionary<TokenType, Func<List<TokenType>, List<string>, string>> _statementProcessors;
 
-        /// <summary>
-        /// בנאי עבור Parser
-        /// </summary>
+        
         public Parser(Tokenizer tokenizer, CodeGenerator codeGenerator, PoliteCodeTools tools)
         {
             _tokenizer = tokenizer;
@@ -74,9 +70,7 @@ namespace PoliteCode
             InitializeProcessors();
         }
 
-        /// <summary>
-        /// אתחול המילון המקשר סוגי טוקנים לפונקציות העיבוד שלהם
-        /// </summary>
+        //אתחול המילון המקשר סוגי טוקנים לפונקציות העיבוד שלהם
         private void InitializeProcessors()
         {
             _statementProcessors = new Dictionary<TokenType, Func<List<TokenType>, List<string>, string>>
@@ -93,9 +87,7 @@ namespace PoliteCode
             };
         }
 
-        /// <summary>
-        /// איפוס מצב המפענח לקומפילציה חדשה
-        /// </summary>
+        // איפוס לקומפילציה חדשה - שימוש ב -main
         public void Reset()
         {
             _csharpCode.Clear();
@@ -115,11 +107,7 @@ namespace PoliteCode
             _expressionEvaluator.SetVariableTypes(new Dictionary<string, string>());
         }
 
-        /// <summary>
-        /// הגדרת שורות הקוד לעיבוד
-        /// </summary>
-        /// <param name="inputLines">מערך של שורות קלט</param>
-        /// <returns>True אם הקלט תקין, False אחרת</returns>
+        // הגדרת שורות הקוד לעיבוד
         public bool SetInput(string[] inputLines)
         {
             _lines.Clear();
@@ -135,10 +123,8 @@ namespace PoliteCode
             return _lines.Count > 0;
         }
 
-        /// <summary>
         /// התחלת עיבוד הקוד שורה אחר שורה
-        /// </summary>
-        /// <returns>True אם הקומפילציה הצליחה</returns>
+     
         public bool ProcessCode()
         {
             ProcessNextLine();
@@ -153,9 +139,7 @@ namespace PoliteCode
             return true;
         }
 
-        /// <summary>
-        /// עיבוד השורה הבאה של הקוד
-        /// </summary>
+        // עיבוד השורה הבאה של הקוד - רקורסיה
         private void ProcessNextLine()
         {
             if (_currentLineIndex >= _lines.Count)
@@ -167,7 +151,7 @@ namespace PoliteCode
 
             string currentLine = _lines[_currentLineIndex];
 
-            // במקרה של סגירת בלוק (סוגר מסולסל סוגר)
+            // (במקרה של סגירת בלוק (סוגר מסולסל סוגר
             if (currentLine.Trim() == "}")
             {
                 if (_blockStartIndices.Count == 0)
@@ -244,12 +228,10 @@ namespace PoliteCode
         }
 
      
-        /// <summary>
-        /// אימות שכל הסוגריים מאוזנים
-        /// </summary>
+        // אימות שכל הסוגריים מאוזנים
         private void ValidateBraceBalance()
         {
-            // בדיקה אם יש בלוקים שלא נסגרו (סוגריים)
+            // בדיקה אם יש בלוקים שלא נסגרו 
             if (_blockStartIndices.Count > 0)
             {
                 int firstUnclosedBlock = _blockStartIndices.Pop();
@@ -257,14 +239,9 @@ namespace PoliteCode
                 return;
             }
 
-            // אם הכל תקין, בנינו בהצלחה את קוד ה-C#
         }
 
-        /// <summary>
         /// ניתוח הוראה מטוקנים ומחרוזות
-        /// </summary>
-        /// <param name="tokens">רשימת סוגי טוקנים</param>
-        /// <param name="inputTokens">רשימת מחרוזות טוקן</param>
         private void ParseStatementForLine(List<TokenType> tokens, List<string> inputTokens)
         {
             if (tokens.Count == 0)
@@ -304,12 +281,7 @@ namespace PoliteCode
 
         #region מעבדי הוראות
 
-        /// <summary>
-        /// עיבוד הוראת הצהרת משתנה
-        /// </summary>
-        /// <param name="tokens">רשימת סוגי טוקנים</param>
-        /// <param name="inputTokens">רשימת מחרוזות טוקן</param>
-        /// <returns>קוד C# מיוצר</returns>
+        // עיבוד הוראת הצהרת משתנה
         private string ProcessVariableDeclaration(List<TokenType> tokens, List<string> inputTokens)
         {
             if (tokens.Count < 3)
@@ -397,12 +369,8 @@ namespace PoliteCode
             return code + ";";
         }
 
-        /// <summary>
-        /// עיבוד הוראת הקצאת משתנה (כולל קריאה לפונקציה)
-        /// </summary>
-        /// <param name="tokens">רשימת סוגי טוקנים</param>
-        /// <param name="inputTokens">רשימת מחרוזות טוקן</param>
-        /// <returns>קוד C# מיוצר</returns>
+        // עיבוד הוראת הקצאת משתנה כולל קריאה לפונקציה
+        
         private string ProcessAssignment(List<TokenType> tokens, List<string> inputTokens)
         {
             if (tokens.Count < 3)
@@ -566,12 +534,8 @@ namespace PoliteCode
             return $"{variableName} = {_codeGenerator.ConvertExpressionToCSharp(expression)};";
         }
 
-        /// <summary>
-        /// עיבוד הוראת הדפסה
-        /// </summary>
-        /// <param name="tokens">רשימת סוגי טוקנים</param>
-        /// <param name="inputTokens">רשימת מחרוזות טוקן</param>
-        /// <returns>קוד C# מיוצר</returns>
+        // עיבוד הוראת הדפסה
+       
         private string ProcessPrintStatement(List<TokenType> tokens, List<string> inputTokens)
         {
             if (tokens.Count < 2)
@@ -663,18 +627,8 @@ namespace PoliteCode
             }
         }
 
-        /// <summary>
-        /// עיבוד הוראת לולאה (for או while)
-        /// </summary>
-        /// <param name="tokens">רשימת סוגי טוקנים</param>
-        /// <param name="inputTokens">רשימת מחרוזות טוקן</param>
-        /// <returns>קוד C# מיוצר</returns>
-        /// <summary>
-        /// עיבוד הוראת לולאה (for או while)
-        /// </summary>
-        /// <param name="tokens">רשימת סוגי טוקנים</param>
-        /// <param name="inputTokens">רשימת מחרוזות טוקן</param>
-        /// <returns>קוד C# מיוצר</returns>
+        // עיבוד הוראת לולאה (for או while)
+        
         private string ProcessLoopStatement(List<TokenType> tokens, List<string> inputTokens)
         {
             if (tokens.Count < 2)
@@ -698,12 +652,8 @@ namespace PoliteCode
             }
         }
 
-        /// <summary>
-        /// עיבוד הוראת לולאת for
-        /// </summary>
-        /// <param name="tokens">רשימת סוגי טוקנים</param>
-        /// <param name="inputTokens">רשימת מחרוזות טוקן</param>
-        /// <returns>קוד C# מיוצר</returns>
+        // עיבוד הוראת לולאת for
+       
         private string ProcessForLoop(List<TokenType> tokens, List<string> inputTokens)
         {
             // מציאת האינדקסים למילות מפתח
@@ -742,12 +692,8 @@ namespace PoliteCode
             return code.ToString();
         }
 
-        /// <summary>
-        /// עיבוד הוראת לולאת while
-        /// </summary>
-        /// <param name="tokens">רשימת סוגי טוקנים</param>
-        /// <param name="inputTokens">רשימת מחרוזות טוקן</param>
-        /// <returns>קוד C# מיוצר</returns>
+        // עיבוד הוראת לולאת while
+        
         private string ProcessWhileLoop(List<TokenType> tokens, List<string> inputTokens)
         {
             int whileIndex = inputTokens.IndexOf("while");
@@ -804,12 +750,8 @@ namespace PoliteCode
             return code.ToString();
         }
 
-        /// <summary>
-        /// עיבוד הוראת if
-        /// </summary>
-        /// <param name="tokens">רשימת סוגי טוקנים</param>
-        /// <param name="inputTokens">רשימת מחרוזות טוקן</param>
-        /// <returns>קוד C# מיוצר</returns>
+        // עיבוד הוראת if
+        
         private string ProcessIfStatement(List<TokenType> tokens, List<string> inputTokens)
         {
             int ifIndex = inputTokens.IndexOf("thank you for checking if");
@@ -863,12 +805,8 @@ namespace PoliteCode
             return code.ToString();
         }
 
-        /// <summary>
-        /// עיבוד הוראת החזרה (return)
-        /// </summary>
-        /// <param name="tokens">רשימת סוגי טוקנים</param>
-        /// <param name="inputTokens">רשימת מחרוזות טוקן</param>
-        /// <returns>קוד C# מיוצר</returns>
+        // עיבוד הוראת החזרה (return)
+      
         private string ProcessReturnStatement(List<TokenType> tokens, List<string> inputTokens)
         {
             // בדיקה אם אנחנו בתוך פונקציה
@@ -1049,12 +987,8 @@ namespace PoliteCode
 
 
 
-        /// <summary>
-        /// עיבוד הגדרת פונקציה
-        /// </summary>
-        /// <param name="tokens">רשימת סוגי טוקנים</param>
-        /// <param name="inputTokens">רשימת מחרוזות טוקן</param>
-        /// <returns>קוד C# מיוצר</returns>
+        // עיבוד הגדרת פונקציה
+        
         private string ProcessFunctionDefinition(List<TokenType> tokens, List<string> inputTokens)
         {
             if (tokens.Count < 6)
@@ -1161,17 +1095,13 @@ namespace PoliteCode
 
         #region ניהול תחומים
 
-        /// <summary>
-        /// דחיפת תחום משתנים חדש למחסנית
-        /// </summary>
+        // דחיפת תחום משתנים חדש למחסנית
         private void PushScope()
         {
             _variableScopes.Push(new Dictionary<string, string>());
         }
 
-        /// <summary>
-        /// שליפת תחום משתנים מהמחסנית
-        /// </summary>
+        // שליפת תחום משתנים מהמחסנית
         private void PopScope()
         {
             if (_variableScopes.Count > 0)
@@ -1180,22 +1110,13 @@ namespace PoliteCode
             }
         }
 
-        /// <summary>
-        /// בדיקה אם משתנה קיים בתחום כלשהו
-        /// </summary>
-        /// <param name="name">שם המשתנה</param>
-        /// <returns>True אם המשתנה קיים</returns>
+        // בדיקה אם משתנה קיים בתחום כלשהו
         private bool VariableExists(string name)
         {
             return _variableScopes.Any(scope => scope.ContainsKey(name));
         }
 
-        /// <summary>
-        /// ניסיון לקבל את סוג המשתנה
-        /// </summary>
-        /// <param name="name">שם המשתנה</param>
-        /// <param name="type">סוג הפלט</param>
-        /// <returns>True אם נמצא משתנה</returns>
+        // ניסיון לקבל את סוג המשתנה
         private bool TryGetVariableType(string name, out string type)
         {
             foreach (var scope in _variableScopes)
@@ -1208,11 +1129,8 @@ namespace PoliteCode
             return false;
         }
 
-        /// <summary>
-        /// הצהרה על משתנה בתחום הנוכחי
-        /// </summary>
-        /// <param name="name">שם המשתנה</param>
-        /// <param name="type">סוג המשתנה</param>
+        // הצהרה על משתנה בתחום הנוכחי
+       
         private void DeclareVariable(string name, string type)
         {
             if (_variableScopes.Count == 0)
@@ -1221,9 +1139,7 @@ namespace PoliteCode
             _variableScopes.Peek()[name] = type;
         }
 
-        /// <summary>
-        /// קבלת כל טיפוסי המשתנים מכל התחומים לבדיקה
-        /// </summary>
+        // קבלת כל טיפוסי המשתנים מכל התחומים לבדיקה
         private Dictionary<string, string> GetAllVariableTypes()
         {
             Dictionary<string, string> allTypes = new Dictionary<string, string>();
@@ -1243,9 +1159,7 @@ namespace PoliteCode
             return allTypes;
         }
 
-        /// <summary>
-        /// פיצול רשימת פרמטרים המופרדים בפסיקים, תוך התחשבות במחרוזות
-        /// </summary>
+        //פיצול רשימת פרמטרים המופרדים בפסיקים, תוך התחשבות במחרוזות
         private List<string> SplitParameterList(string paramString)
         {
             List<string> result = new List<string>();

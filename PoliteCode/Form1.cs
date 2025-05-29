@@ -14,24 +14,21 @@ namespace PoliteCode
 {
     public partial class Form1 : Form
     {
-        // רכיבי ליבה
+        //  רכיבי ליבה של התוכנית
         private Tokenizer _tokenizer;
         private CodeGenerator _codeGenerator;
         private PoliteCodeTools _tools;
         private Parser _parser;
 
-        /// <summary>
-        /// בנאי המחלקה הראשית
-        /// </summary>
+        
         public Form1()
         {
             InitializeComponent();
             InitializeComponents();
         }
 
-        /// <summary>
         /// אתחול רכיבי המערכת
-        /// </summary>
+       
         private void InitializeComponents()
         {
             // יצירת מופעים של הרכיבים
@@ -41,15 +38,14 @@ namespace PoliteCode
             _codeGenerator = new CodeGenerator(_tokenizer);
             _parser = new Parser(_tokenizer, _codeGenerator, _tools);
         }
+        
 
-        /// <summary>
-        /// אירוע לחיצה על כפתור התרגום
-        /// </summary>
+        // כפתור הרצה
         private void button1_Click(object sender, EventArgs e)
         {
             try
             {
-                // איפוס מצב המפענח
+                //parser איפוס  - aכל קוד שונה רלוונטי בנפרד 
                 _parser.Reset();
 
                 // פיצול הקלט לשורות
@@ -75,25 +71,20 @@ namespace PoliteCode
             }
         }
 
-        /// <summary>
         /// הצגת הקוד המתורגם
-        /// </summary>
+        
         private void ShowFinalCode()
         {
             CodeC.Text = _parser.GetCSharpCode();
         }
 
-        /// <summary>
-        /// טיפול באירוע טעינת הטופס
-        /// </summary>
+        // טיפול באירוע טעינת הטופס
         private void Form1_Load(object sender, EventArgs e)
         {
             // אתחול נוסף בעת טעינת הטופס אם נדרש
         }
 
-        /// <summary>
-        /// אירוע לחיצה על כפתור האינבוקס
-        /// </summary>
+        // לחיצה על כפתור האינבוקס
         private void btnInbox_Click(object sender, EventArgs e)
         {
             // יצירת מופע של טופס האינבוקס
@@ -139,10 +130,8 @@ namespace PoliteCode
         }
 
 
-        /// <summary>
-        /// סימון שורה עם שגיאה בתיבת הטקסט
-        /// </summary>
-        /// <param name="lineNumber">מספר השורה לסימון</param>
+        // סימון שורה עם שגיאה בתיבת הטקסט -error hanlding
+       
         public void HighlightErrorLine(int lineNumber)
         {
             if (lineNumber < 0 || input == null || lineNumber >= input.Lines.Length)

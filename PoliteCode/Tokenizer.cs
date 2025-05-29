@@ -5,9 +5,7 @@ using System.Text.RegularExpressions;
 
 namespace PoliteCode
 {
-    /// <summary>
-    /// אחראי על פירוק טקסט PoliteCode לטוקנים וזיהוי סוגיהם
-    /// </summary>
+    // אחראי על פירוק טקסט PoliteCode לטוקנים וזיהוי סוגיהם
     public class Tokenizer
     {
         // סוגי טוקנים
@@ -108,9 +106,8 @@ namespace PoliteCode
         //אם זה משתנה
         private static readonly Regex _variableNameRegex = new Regex(@"^[a-zA-Z_]\w*$", RegexOptions.Compiled);
 
-        /// <summary>
-        /// מבצע טוקניזציה של שורת קלט ב-PoliteCode
-        /// </summary>
+        // מבצע טוקניזציה של שורת קלט ב-PoliteCode
+        // כמו lexer - מפריד בין מילי מפתח
         public List<string> TokenizeInput(string input)
         {
             string pattern = @"(please define function|please create|please call|thank you for printing|thank you for checking if|thank you for looping|thank you for returning|from|to|while|greater or equal to|less or equal to|equal to|different from|greater then|less then|[a-zA-Z_]\w*|-?\d+(\.\d+)?|""[^""]*""|true|false|equals|\(|\)|\{|\})";
@@ -118,9 +115,7 @@ namespace PoliteCode
             return matches.Cast<Match>().Select(m => m.Value).ToList();
         }
 
-        /// <summary>
-        /// מעבד מחרוזות טוקן לסוגי TokenType
-        /// </summary>
+        // מעבד מחרוזות טוקן לסוגי TokenType
         public List<TokenType> ProcessTokens(List<string> inputTokens)
         {
             var tokens = new List<TokenType>();
@@ -141,9 +136,7 @@ namespace PoliteCode
             return tokens;
         }
 
-        /// <summary>
         /// מזהה את סוג הטוקן - גרסה משופרת עם מילונים
-        /// </summary>
         public TokenType IdentifyToken(string value)
         {
             // 1. בדיקת מילות מפתח במילון - חיפוש O(1)
@@ -178,19 +171,13 @@ namespace PoliteCode
             return TokenType.Unknown;
         }
 
-        /// <summary>
-        /// מחזיר את שם המשתנה הנוכחי המעובד
-        /// </summary>
+        // מחזיר את שם המשתנה הנוכחי המעובד
         public string CurrentVariableName => _currentVariableName;
 
-        /// <summary>
-        /// מחזיר את סוג המשתנה הנוכחי המעובד
-        /// </summary>
+        // מחזיר את סוג המשתנה הנוכחי המעובד
         public string CurrentVariableType => _currentVariableType;
 
-        /// <summary>
-        /// מילון המקשר מילות מתמטיקה לסמלים
-        /// </summary>
+        // מילון המקשר מילות מתמטיקה לסמלים
         public Dictionary<string, string> MathWordToSymbol { get; } = new Dictionary<string, string>
         {
             { "equal to", "==" },
