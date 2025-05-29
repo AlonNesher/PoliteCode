@@ -30,10 +30,12 @@ namespace PoliteCode
             WhileKeyword,   // while (for while loops)
             Condition,      // ==, !=, <, >, <=, >=
             Terminator,     // newline character
+            Comma,
             Unknown,        // Unrecognized token
             DefineFunction, // "please define function"
             Return,         // "thank you for returning"
             CallFunction    // "please call" (new)
+
         }
 
         // שמירת מידע על המשתנה הנוכחי בזמן הטוקניזציה
@@ -76,6 +78,7 @@ namespace PoliteCode
             { "}", TokenType.CloseBrace },
             { "(", TokenType.OpenParen },
             { ")", TokenType.CloseParen },
+            { ",", TokenType.Comma },
             { "\n", TokenType.Terminator }
         };
 
@@ -110,7 +113,7 @@ namespace PoliteCode
         // כמו lexer - מפריד בין מילי מפתח
         public List<string> TokenizeInput(string input)
         {
-            string pattern = @"(please define function|please create|please call|thank you for printing|thank you for checking if|thank you for looping|thank you for returning|from|to|while|greater or equal to|less or equal to|equal to|different from|greater then|less then|[a-zA-Z_]\w*|-?\d+(\.\d+)?|""[^""]*""|true|false|equals|\(|\)|\{|\})";
+            string pattern = @"(please define function|please create|please call|thank you for printing|thank you for checking if|thank you for looping|thank you for returning|from|to|while|greater or equal to|less or equal to|equal to|different from|greater then|less then|[a-zA-Z_]\w*|-?\d+(\.\d+)?|""[^""]*""|true|false|equals|\(|\)|\{|\}|,)";
             var matches = Regex.Matches(input, pattern);
             return matches.Cast<Match>().Select(m => m.Value).ToList();
         }

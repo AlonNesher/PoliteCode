@@ -988,7 +988,7 @@ namespace PoliteCode
 
 
         // עיבוד הגדרת פונקציה
-        
+
         private string ProcessFunctionDefinition(List<TokenType> tokens, List<string> inputTokens)
         {
             if (tokens.Count < 6)
@@ -1003,15 +1003,26 @@ namespace PoliteCode
                 return string.Empty;
             }
 
-            if (tokens[tokens.Count - 2] != TokenType.CloseParen)
+            // מציאת מיקום הסוגר הסוגר
+            int closeParenIndex = -1;
+            for (int i = 4; i < tokens.Count; i++)
             {
-                _tools.ShowError("Expected ')' to be the second to last token", _currentLineIndex);
+                if (tokens[i] == TokenType.CloseParen)
+                {
+                    closeParenIndex = i;
+                    break;
+                }
+            }
+
+            if (closeParenIndex == -1)
+            {
+                _tools.ShowError("Expected ')' in function definition", _currentLineIndex);
                 return string.Empty;
             }
 
-            if (tokens[tokens.Count - 1] != TokenType.OpenBrace)
+            if (closeParenIndex + 1 >= tokens.Count || tokens[closeParenIndex + 1] != TokenType.OpenBrace)
             {
-                _tools.ShowError("Expected '{' to be the last token of the function header", _currentLineIndex);
+                _tools.ShowError("Expected '{' after closing parenthesis in function definition", _currentLineIndex);
                 return string.Empty;
             }
 
@@ -1035,7 +1046,8 @@ namespace PoliteCode
             // שמירת הפונקציה במפה
             _functionMap[functionName] = returnTypePolite;
 
-            if (functionName == "main" && tokens.Count != 6)
+            // טיפול מיוחד בפונקציית main
+            if (functionName == "main" && closeParenIndex != 4) // אם יש פרמטרים בפונקציית main
             {
                 _tools.ShowError("if you create the main function, the build is like this:" +
                     "\nplease define function main(){\n you cannot use any parameters!", _currentLineIndex);
@@ -1047,14 +1059,21 @@ namespace PoliteCode
             _variableScopes.Clear();
             PushScope();
 
-            for (int i = 4; i < tokens.Count - 2; i += 2)
+            // עיבוד פרמטרים עם תמיכה בפסיקים
+            for (int i = 4; i < closeParenIndex; i++)
             {
-                if (i + 1 >= tokens.Count - 2)
+                // דלג על פסיקים
+                if (tokens[i] == TokenType.Comma)
+                    continue;
+
+                // וודא שיש עוד טוקן אחרי הטיפוס (עבור שם הפרמטר)
+                if (i + 1 >= closeParenIndex)
                 {
                     _tools.ShowError("Incomplete parameter pair in function definition", _currentLineIndex);
                     return string.Empty;
                 }
 
+                // בדוק שהטוקן הנוכחי הוא טיפוס והבא הוא שם
                 if (tokens[i] != TokenType.VariableType || tokens[i + 1] != TokenType.VariableName)
                 {
                     _tools.ShowError($"Invalid parameter at position {i}: expected [type name]", _currentLineIndex);
@@ -1064,6 +1083,7 @@ namespace PoliteCode
                 string typePolite = inputTokens[i];
                 string name = inputTokens[i + 1];
 
+                // בדיקת קונפליקטים
                 if (_functionMap.ContainsKey(name))
                 {
                     _tools.ShowError($"Parameter name '{name}' conflicts with an existing function name.", _currentLineIndex);
@@ -1076,11 +1096,15 @@ namespace PoliteCode
                     return string.Empty;
                 }
 
+                // המרה לטיפוס C# והוספה לרשימת הפרמטרים
                 string typeCSharp = _tools.TranslateType(typePolite);
                 parameters.Add($"{typeCSharp} {name}");
 
                 // שמירה במפת משתנים
                 DeclareVariable(name, typePolite);
+
+                // דלג על שם המשתנה בסיבוב הבא
+                i++;
             }
 
             // בניית הקוד

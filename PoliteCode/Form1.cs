@@ -9,6 +9,9 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.IO;
 using System.Diagnostics;
+using System.CodeDom.Compiler;
+using Microsoft.CSharp;
+using System.Reflection;
 
 namespace PoliteCode
 {

@@ -43,15 +43,22 @@ namespace PoliteCode.Validation
                 return false;
             }
 
-            switch (firstVarType)
+            if (firstVarType == "boolean")
             {
-                case "boolean": return ValidateBooleanCondition(tokens, out errorMsg);
-                case "integer":
-                case "decimal": return ValidateNumericCondition(tokens, out errorMsg);
-                case "text": return ValidateTextCondition(tokens, out errorMsg);
-                default:
-                    errorMsg = $"Unsupported variable type '{firstVarType}'";
-                    return false;
+                return ValidateBooleanCondition(tokens, out errorMsg);
+            }
+            else if (firstVarType == "integer" || firstVarType == "decimal")
+            {
+                return ValidateNumericCondition(tokens, out errorMsg);
+            }
+            else if (firstVarType == "text")
+            {
+                return ValidateTextCondition(tokens, out errorMsg);
+            }
+            else
+            {
+                errorMsg = $"Unsupported variable type '{firstVarType}'";
+                return false;
             }
         }
 
